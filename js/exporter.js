@@ -1,12 +1,18 @@
 // Turning projects into files, and getting files onto the device.
 
 import { encodeGIF } from './gif.js';
-import { renderPanel, frameTime, LIMITS, PANEL_W, PANEL_H } from './model.js';
+import { renderPanel, renderPanelForLeds, frameTime, LIMITS, PANEL_W, PANEL_H } from './model.js';
 import { countColors } from './raster.js';
 import { panelToCanvas } from './led.js';
 
+// Frames as the preview shows them (how the curtain will look).
 export function panelFrames(project) {
   return project.frames.map((f) => ({ rgb: renderPanel(project, f), delay: frameTime(f) }));
+}
+
+// Frames as stored in the GIF (LED-corrected values that make the curtain look like the preview).
+export function ledFrames(project) {
+  return project.frames.map((f) => ({ rgb: renderPanelForLeds(project, f), delay: frameTime(f) }));
 }
 
 export function buildGIF(frames, loop = true) {
@@ -31,7 +37,7 @@ export function analyse(frames, loop = true) {
 export function combineFrames(items) {
   const out = [];
   for (const { project, repeat = 1 } of items) {
-    const frames = panelFrames(project);
+    const frames = ledFrames(project);
     for (let r = 0; r < repeat; r++) out.push(...frames);
   }
   return out;
@@ -50,8 +56,10 @@ export function canvasToBlob(canvas) {
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
 }
 
+// A 20 x 26 PNG for upload holds LED-corrected values; a styled preview shows the on-screen look.
 export async function framePNG(project, frame, scale = 1, opts = {}) {
-  return canvasToBlob(panelToCanvas(renderPanel(project, frame), scale, opts));
+  const rgb = opts.mode === 'led' ? renderPanel(project, frame) : renderPanelForLeds(project, frame);
+  return canvasToBlob(panelToCanvas(rgb, scale, opts));
 }
 
 // Saves a file with a real download (anchor + download attribute). Falls back to a data URL

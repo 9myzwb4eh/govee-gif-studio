@@ -59,6 +59,7 @@
     <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10 M18 7h2 M4 17h4 M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></symbol>
     <symbol id="i-film" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M7 5v14 M17 5v14 M3 9h4 M3 15h4 M17 9h4 M17 15h4" /></symbol>
     <symbol id="i-tool" viewBox="0 0 24 24"><path d="M14.5 5.5a4 4 0 00-5 5L4 16l4 4 5.5-5.5a4 4 0 005-5L16 12l-4-4z" /></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z" /></symbol>
     <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16 M4 12h16 M4 17h16" /></symbol>
   </defs>
 </svg>
@@ -74,6 +75,7 @@
       <button class="btn ghost icon-only desk-only" id="redoBtn" title="Redo (Ctrl+Shift+Z)"><svg><use href="#i-redo"/></svg></button>
       <span class="sep desk-only"></span>
       <button class="btn ghost" data-open="projectsDlg"><svg><use href="#i-folder"/></svg><span>Projects</span></button>
+      <button class="btn ghost" data-open="createDlg" title="Make an animation from a description"><svg><use href="#i-bolt"/></svg><span>Create</span></button>
       <button class="btn ghost" data-open="templatesDlg"><svg><use href="#i-sparkle"/></svg><span>Templates</span></button>
       <button class="btn ghost" data-open="effectsDlg"><svg><use href="#i-wand"/></svg><span>Effects</span></button>
       <button class="btn ghost" id="importBtn"><svg><use href="#i-import"/></svg><span>Import</span></button>
@@ -230,6 +232,35 @@
   <div class="tpl-grid" id="tplGrid"></div>
 </dialog>
 
+<!-- Create from text -->
+<dialog id="createDlg" class="dlg wide">
+  <form method="dialog" class="dlg-head"><h2>Create from a description</h2><button class="x" aria-label="Close">×</button></form>
+  <p class="dlg-sub">Describe the animation. Put words in quotes to show them as text.</p>
+  <textarea id="crPrompt" rows="2" placeholder='e.g. orange pumpkin with three purple bats, stars, "BOO"'></textarea>
+  <div class="cr-examples" id="crExamples"></div>
+  <div class="cr-body">
+    <div class="cr-preview"><canvas id="crPreview"></canvas><span id="crInfo" class="hint"></span></div>
+    <div class="cr-side">
+      <div class="row-btns">
+        <button class="btn primary" id="crBuild"><svg><use href="#i-bolt"/></svg>Build</button>
+        <button class="btn" id="crAi"><svg><use href="#i-sparkle"/></svg>Build with AI</button>
+      </div>
+      <p class="hint" id="crHelp">Build is instant and free. It knows: pumpkin, ghost, bats, spider, witch, moon, stars, lightning, rain, snow, fire, eyes, skull, heart, colors, counts, slow/fast, and quoted text. Build with AI can draw anything, using your own Claude API key.</p>
+      <div class="cr-understood" id="crUnderstood"></div>
+      <div class="row-btns"><button class="btn primary" id="crUse" disabled>Open in editor</button></div>
+      <details class="led-tune" id="crAiSettings">
+        <summary>AI settings</summary>
+        <div class="grid2">
+          <label>Anthropic API key <input type="password" id="crKey" placeholder="sk-ant-..." autocomplete="off"></label>
+          <label>Model <select id="crModel"></select></label>
+        </div>
+        <p class="hint">Get a key at console.anthropic.com. It's stored only in this browser and sent only to api.anthropic.com. Each AI build costs a few cents on your Anthropic account.</p>
+        <div class="row-btns"><button class="btn tiny ghost" id="crForget">Forget key</button></div>
+      </details>
+    </div>
+  </div>
+</dialog>
+
 <!-- Effects -->
 <dialog id="effectsDlg" class="dlg wide">
   <form method="dialog" class="dlg-head"><h2>Effects &amp; generators</h2><button class="x" aria-label="Close">×</button></form>
@@ -368,6 +399,18 @@
     <label for="outSat">Color richness <output id="outSatOut">100%</output></label>
     <input type="range" id="outSat" min="50" max="180" value="100">
   </div>
+  <details class="led-tune" open>
+    <summary>Curtain correction</summary>
+    <p class="hint">LEDs show dark colors much brighter than a screen does. This keeps dark areas dark on the curtain so it matches the preview. Raise it if backgrounds still glow, lower it if dim details vanish.</p>
+    <div class="field">
+      <label for="outGamma">Dark-tone correction <output id="outGammaOut">Standard</output></label>
+      <input type="range" id="outGamma" min="10" max="32" value="24">
+    </div>
+    <div class="field">
+      <label for="outBlack">Black level (switch off LEDs below) <output id="outBlackOut">6</output></label>
+      <input type="range" id="outBlack" min="0" max="40" value="6">
+    </div>
+  </details>
   <label class="check"><input type="checkbox" id="expLoop" checked> Loop forever</label>
   <div class="exp-actions">
     <button class="btn primary" id="expGif"><svg><use href="#i-export"/></svg>Download GIF</button>

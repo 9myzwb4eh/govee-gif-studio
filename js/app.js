@@ -12,7 +12,9 @@ import { DEFAULT_FONT, layoutText } from './font.js';
 import * as fx from './effects.js';
 import { TEMPLATES } from './templates.js';
 import { readImageFile, toCels } from './importer.js';
-import { panelFrames, analyse, combineFrames, formatBytes, safeName, download, share, canShareFiles, framePNG, buildGIF } from './exporter.js';
+import { panelFrames, ledFrames, analyse, combineFrames, formatBytes, safeName, download, share, canShareFiles, framePNG, buildGIF } from './exporter.js';
+import { sceneFromText, renderScene } from './scene.js';
+import { aiScene, AI_MODELS, getKey, setKey } from './ai.js';
 import { saveAutosave, loadAutosave, saveToLibrary, listLibrary, deleteFromLibrary, getPref, setPref } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
@@ -1055,6 +1057,7 @@ function openDlg(id) {
   if (id === 'projectsDlg') renderProjects();
   if (id === 'paletteDlg') renderPaletteDlg();
   if (id === 'combineDlg') renderCombine();
+  if (id === 'createDlg') renderCreate();
   return d;
 }
 
@@ -1100,6 +1103,112 @@ function renderTemplates() {
     });
   }, 70);
 }
+
+// Create from a description
+const CR_EXAMPLES = [
+  'orange pumpkin, stars, "BOO"',
+  'ghost rising, three bats, moon',
+  'witch flying across the moon with stars',
+  'spider and green glowing eyes',
+  'lightning storm with rain',
+  'red beating heart, "LOVE" pulsing',
+  'snow falling slowly, "HAPPY HOLIDAYS"',
+  'skull with fire',
+];
+let crProject = null;
+let crAnim = null;
+let crAbort = null;
+
+function renderCreate() {
+  const ex = $('crExamples');
+  if (!ex.children.length) {
+    for (const e of CR_EXAMPLES) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = e;
+      b.onclick = () => { $('crPrompt').value = e; crBuild(); };
+      ex.appendChild(b);
+    }
+    const sel = $('crModel');
+    for (const m of AI_MODELS) { const o = document.createElement('option'); o.value = m.id; o.textContent = m.label; sel.appendChild(o); }
+    sel.value = getPref('aiModel', AI_MODELS[0].id);
+  }
+  $('crKey').value = getKey();
+  $('crAiSettings').open = !getKey();
+  showCreated(crProject);
+  setTimeout(() => $('crPrompt').focus(), 50);
+}
+
+function showCreated(p, understood = null, note = '') {
+  crProject = p;
+  $('crUse').disabled = !p;
+  const box = $('crUnderstood');
+  if (understood) {
+    box.textContent = '';
+    for (const u of understood) { const s = document.createElement('span'); s.textContent = u; box.appendChild(s); }
+  }
+  clearTimeout(crAnim);
+  const c = $('crPreview');
+  fitCanvas(c, window.innerWidth <= 860 ? 130 : 150);
+  if (!p) { drawPanel(c, new Uint8ClampedArray(PANEL_W * PANEL_H * 3), { mode: 'led' }); $('crInfo').textContent = note; return; }
+  const frames = panelFrames(p);
+  $('crInfo').textContent = note || `${frames.length} frames · ${(frames.reduce((a, f) => a + f.delay, 0) / 1000).toFixed(1)} s`;
+  let i = 0;
+  const step = () => {
+    if (!$('createDlg').open) return;
+    const f = frames[i++ % frames.length];
+    drawPanel(c, f.rgb, { mode: 'led' });
+    crAnim = setTimeout(step, Math.max(20, f.delay));
+  };
+  step();
+}
+
+const crBuild = guard(() => {
+  const text = $('crPrompt').value.trim();
+  if (!text) { toast('Type a description first.'); return; }
+  const { scene, understood } = sceneFromText(text);
+  showCreated(renderScene(scene), understood);
+});
+
+$('crBuild').onclick = crBuild;
+$('crPrompt').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); crBuild(); } });
+$('crKey').onchange = () => setKey($('crKey').value.trim());
+$('crModel').onchange = () => setPref('aiModel', $('crModel').value);
+$('crForget').onclick = () => { setKey(''); $('crKey').value = ''; toast('API key removed from this browser.'); };
+
+$('crAi').onclick = guard(async () => {
+  const text = $('crPrompt').value.trim();
+  if (!text) { toast('Type a description first.'); return; }
+  const key = $('crKey').value.trim() || getKey();
+  if (!key) { $('crAiSettings').open = true; $('crKey').focus(); toast('Paste your Anthropic API key in AI settings first.'); return; }
+  setKey(key);
+  if (crAbort) crAbort.abort();
+  crAbort = new AbortController();
+  const btn = $('crAi');
+  btn.disabled = true;
+  btn.lastChild.textContent = 'Thinking…';
+  showCreated(null, [], 'Claude is designing your animation…');
+  try {
+    const { scene } = await aiScene(text, { apiKey: key, model: $('crModel').value, signal: crAbort.signal });
+    const p = renderScene(scene);
+    const kinds = [...new Set((scene.elements || []).map((e) => (e.type === 'text' ? `text "${e.text}"` : e.type)))];
+    showCreated(p, kinds, `AI scene · ${p.frames.length} frames`);
+  } catch (e) {
+    if (e.name !== 'AbortError') { showCreated(null, [], ''); throw e; }
+  } finally {
+    btn.disabled = false;
+    btn.lastChild.textContent = 'Build with AI';
+  }
+});
+
+$('crUse').onclick = () => {
+  if (!crProject) return;
+  const p = crProject;
+  crProject = null;
+  $('createDlg').close();
+  setProject(p);
+  toast('Opened in the editor. Every part is a normal layer you can edit, and Undo brings back your previous project.');
+};
 
 // Effects
 function openEffects(tab, opts = {}) {
@@ -1316,6 +1425,10 @@ function renderExport() {
   $('outSat').value = Math.round((project.output.saturation ?? 1) * 100);
   $('outBrightOut').textContent = `${$('outBright').value}%`;
   $('outSatOut').textContent = `${$('outSat').value}%`;
+  $('outGamma').value = Math.round((project.output.ledGamma ?? 2.4) * 10);
+  $('outBlack').value = project.output.blackCut ?? 6;
+  $('outGammaOut').textContent = gammaLabel(project.output.ledGamma ?? 2.4);
+  $('outBlackOut').textContent = `${$('outBlack').value}`;
   $('expLoop').checked = project.loop !== false;
   $('expShare').hidden = !canShareFiles();
   $('combineShare').hidden = !canShareFiles();
@@ -1324,7 +1437,7 @@ function renderExport() {
 
 function refreshExport() {
   const frames = panelFrames(project);
-  expData = analyse(frames, project.loop !== false);
+  expData = analyse(ledFrames(project), project.loop !== false);
   $('expFrames').textContent = expData.frames;
   $('expSize').textContent = formatBytes(expData.size);
   $('expTime').textContent = `${(expData.duration / 1000).toFixed(1)} s`;
@@ -1352,15 +1465,26 @@ function showWarnings(ul, warnings) {
 
 let outTimer;
 const outChange = () => {
-  project.output = { ...project.output, brightness: num('outBright', 100) / 100, saturation: num('outSat', 100) / 100 };
+  project.output = {
+    ...project.output,
+    brightness: num('outBright', 100) / 100,
+    saturation: num('outSat', 100) / 100,
+    ledGamma: num('outGamma', 24) / 10,
+    blackCut: num('outBlack', 6),
+  };
   $('outBrightOut').textContent = `${$('outBright').value}%`;
   $('outSatOut').textContent = `${$('outSat').value}%`;
+  $('outGammaOut').textContent = gammaLabel(project.output.ledGamma);
+  $('outBlackOut').textContent = `${$('outBlack').value}`;
   markDirty();
   clearTimeout(outTimer);
   outTimer = setTimeout(() => { refreshExport(); renderPreview(); renderTimeline(); }, 120);
 };
 $('outBright').oninput = outChange;
 $('outSat').oninput = outChange;
+$('outGamma').oninput = outChange;
+$('outBlack').oninput = outChange;
+function gammaLabel(g) { return g <= 1.05 ? 'Off' : g < 1.8 ? `Light (${g.toFixed(1)})` : g <= 2.4 ? `Standard (${g.toFixed(1)})` : `Strong (${g.toFixed(1)})`; }
 $('expLoop').onchange = () => { project.loop = $('expLoop').checked; markDirty(); refreshExport(); };
 $('exportBtn').onclick = () => openDlg('exportDlg');
 

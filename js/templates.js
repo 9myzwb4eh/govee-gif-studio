@@ -29,13 +29,13 @@ function paint(p, layerIndex, draw, { once = false } = {}) {
   });
 }
 
-function radial(ctx, x, y, r, stops) {
+export function radial(ctx, x, y, r, stops) {
   const g = ctx.createRadialGradient(x, y, 0, x, y, r);
   stops.forEach(([o, c]) => g.addColorStop(o, c));
   return g;
 }
 
-function linear(ctx, x0, y0, x1, y1, stops) {
+export function linear(ctx, x0, y0, x1, y1, stops) {
   const g = ctx.createLinearGradient(x0, y0, x1, y1);
   stops.forEach(([o, c]) => g.addColorStop(o, c));
   return g;
@@ -59,7 +59,7 @@ function pumpkin() {
     ctx.lineTo(45, 100); ctx.lineTo(38, 106); ctx.lineTo(32, 97); ctx.lineTo(25, 101); ctx.closePath();
   };
   paint(p, 0, (ctx, t, i, W, H) => {
-    ctx.fillStyle = linear(ctx, 0, 0, 0, H, [[0, '#1a0633'], [0.6, '#0a0418'], [1, '#000000']]);
+    ctx.fillStyle = linear(ctx, 0, 0, 0, H, [[0, '#12042a'], [0.5, '#000000'], [1, '#000000']]);
     ctx.fillRect(0, 0, W, H);
   }, { once: true });
   paint(p, 1, (ctx) => {
@@ -91,7 +91,7 @@ function pumpkin() {
 
 // ---------- 2. Bats crossing ----------
 
-function drawBat(ctx, x, y, s, flap) {
+export function drawBat(ctx, x, y, s, flap) {
   ctx.save();
   ctx.translate(x, y); ctx.scale(s, s);
   const lift = flap * 9;
@@ -140,7 +140,7 @@ function bats() {
 
 // ---------- 3. Ghost rising ----------
 
-function drawGhost(ctx, x, y, alpha, wave) {
+export function drawGhost(ctx, x, y, alpha, wave) {
   ctx.save();
   ctx.translate(x, y);
   ctx.globalAlpha = alpha;
@@ -161,13 +161,13 @@ function drawGhost(ctx, x, y, alpha, wave) {
 }
 
 function ghost() {
-  const p = setup('Ghost rising', ['Graveyard', ['Ghost glow', 'add', 0.8], 'Ghost'], 36, 70);
+  const p = setup('Ghost rising', ['Graveyard', ['Ghost glow', 'add', 0.55], 'Ghost'], 36, 70);
   const pos = (t) => {
     const e = EASINGS['ease-out'](t);
     return { x: 50 + Math.sin(TAU * t * 2) * 6, y: 150 - e * 110, a: Math.min(1, t / 0.15) * Math.min(1, (1 - t) / 0.25), wave: TAU * t * 4 };
   };
   paint(p, 0, (ctx, t, i, W, H) => {
-    ctx.fillStyle = linear(ctx, 0, 0, 0, H, [[0, '#050818'], [0.75, '#16103a'], [1, '#1d1240']]);
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = '#0b2a14';
     ctx.beginPath(); ctx.moveTo(0, 118); ctx.quadraticCurveTo(50, 104, 100, 116); ctx.lineTo(100, 130); ctx.lineTo(0, 130); ctx.fill();
@@ -280,7 +280,7 @@ function storm() {
 
 // ---------- 6. Witch across the moon ----------
 
-function drawWitch(ctx, x, y, t) {
+export function drawWitch(ctx, x, y, t) {
   ctx.save(); ctx.translate(x, y); ctx.scale(1.55, 1.55); ctx.rotate(-0.08 + Math.sin(TAU * t * 2) * 0.05);
   ctx.fillStyle = '#060309'; ctx.strokeStyle = '#060309'; ctx.lineCap = 'round';
   // broom

@@ -1,12 +1,13 @@
 // Browser self-test: open tests/index.html. Results also go to the console and window.__results.
-import { WORK_W, WORK_H, PANEL_W, PANEL_H, newBuffer, downscale, compositeLayers, transformBuffer } from '../js/raster.js';
+import { WORK_W, WORK_H, PANEL_W, PANEL_H, newBuffer, downscale, compositeLayers, transformBuffer, ledEncode } from '../js/raster.js';
 import { createProject, renderPanel, serialize, deserialize, writableCel } from '../js/model.js';
 import { encodeGIF, decodeGIF } from '../js/gif.js';
 import { Stroke } from '../js/paint.js';
 import { tween, centroid, text } from '../js/effects.js';
 import { TEMPLATES } from '../js/templates.js';
 import { layoutText } from '../js/font.js';
-import { panelFrames, analyse } from '../js/exporter.js';
+import { sceneFromText, renderScene } from '../js/scene.js';
+import { panelFrames, ledFrames, analyse } from '../js/exporter.js';
 
 const results = [];
 const check = (name, ok, detail = '') => results.push({ name, ok: !!ok, detail });
@@ -43,13 +44,24 @@ check('GIF loops forever', dec.loop === 0, `loop = ${dec.loop}`);
 let maxErr = 0;
 dec.frames.forEach((f, k) => { for (let i = 0; i < 520; i++) for (let c = 0; c < 3; c++) maxErr = Math.max(maxErr, Math.abs(f.rgba[i * 4 + c] - frames[k].rgb[i * 3 + c])); });
 check('GIF pixels match the preview exactly', maxErr === 0, `max error ${maxErr}`);
-const exp = analyse(panelFrames(p));
+const exp = analyse(ledFrames(p));
 const ew = exp.bytes[6] | (exp.bytes[7] << 8), eh = exp.bytes[8] | (exp.bytes[9] << 8);
 check('Project export is 20 x 26', ew === 20 && eh === 26, `${ew} x ${eh}, ${exp.size} bytes`);
 const back = decodeGIF(exp.bytes).frames[0].rgba;
+const ledPanel = ledEncode(panel, p.output);
 let same = true;
-for (let i = 0; i < 520; i++) for (let c = 0; c < 3; c++) if (back[i * 4 + c] !== panel[i * 3 + c]) same = false;
-check('Exported GIF equals the on-screen panel', same);
+for (let i = 0; i < 520; i++) for (let c = 0; c < 3; c++) if (back[i * 4 + c] !== ledPanel[i * 3 + c]) same = false;
+check('Exported GIF equals the on-screen panel after LED correction', same);
+
+// LED correction: full colors untouched, dark tones pushed toward off, hue kept.
+const probe = Uint8ClampedArray.from([255, 128, 0, 30, 20, 60, 120, 60, 0, 4, 4, 4]);
+const enc = ledEncode(probe, { ledGamma: 2.4, blackCut: 6 });
+check('LED correction keeps full-brightness colors', enc[0] === 255 && Math.abs(enc[1] - 128) <= 1 && enc[2] === 0, `[${enc[0]},${enc[1]},${enc[2]}]`);
+check('LED correction darkens a dim navy that would glow on the curtain', enc[5] <= 8, `[${enc[3]},${enc[4]},${enc[5]}]`);
+check('LED correction keeps hue (dark orange stays orange)', enc[6] > 0 && Math.abs(enc[7] / enc[6] - 0.5) < 0.05, `[${enc[6]},${enc[7]},${enc[8]}]`);
+check('Near-black switches LEDs off', enc[9] === 0 && enc[10] === 0 && enc[11] === 0);
+const off = ledEncode(probe, { ledGamma: 1, blackCut: 0 });
+check('Correction off leaves values unchanged', off.every((v, i) => v === probe[i]));
 
 // 3. Soft brush and sub-pixel motion.
 const s = new Stroke(newBuffer(), { color: [255, 255, 255] });
@@ -90,6 +102,19 @@ for (const t of TEMPLATES) {
   const r = analyse(panelFrames(tp2));
   check(`Template "${t.name}"`, r.frames <= 100 && r.size <= 500 * 1024 && tp2.layers.length <= 10, `${r.frames} frames, ${(r.size / 1024).toFixed(1)} KB, ${tp2.layers.length} layers`);
 }
+
+// 8. Text-to-scene builder.
+for (const prompt of ['orange pumpkin, stars, "BOO"', 'ghost rising, three bats, moon', 'witch flying across the moon with stars', 'lightning storm with rain', 'red beating heart, "LOVE" pulsing', 'snow falling slowly, "HAPPY HOLIDAYS"', 'skull with fire and green eyes', 'hello there']) {
+  const { scene, understood } = sceneFromText(prompt);
+  const sp = renderScene(scene);
+  const r = analyse(ledFrames(sp));
+  check(`Scene "${prompt}"`, understood.length > 0 && r.frames <= 100 && r.size <= 500 * 1024 && sp.layers.length <= 10, `${understood.join(', ')} · ${r.frames} frames, ${(r.size / 1024).toFixed(1)} KB`);
+}
+const three = sceneFromText('three purple bats').scene.elements[0];
+check('Scene builder reads counts and colors', three.count === 3 && three.color === '#9b30ff', JSON.stringify(three));
+const shapeScene = renderScene({ frames: 8, elements: [{ type: 'shape', shape: 'circle', r: 3, color: '#ff0000', keyframes: [{ t: 0, x: 4, y: 13 }, { t: 1, x: 16, y: 13 }] }] });
+const xs2 = shapeScene.frames.map((f) => { const L = shapeScene.layers[1].id; return f.cels[L] ? centroid(f.cels[L])[0] : 0; });
+check('AI shape keyframes move smoothly', xs2.every((x, i) => !i || x > xs2[i - 1]), xs2.map((x) => (x / 5).toFixed(1)).join(' → '));
 
 const out = document.getElementById('out');
 for (const r of results) {

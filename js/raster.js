@@ -100,7 +100,6 @@ export function nearestColor(r, g, b, palette) {
 }
 
 // Pull every pixel toward its nearest palette color. strength 0 = untouched, 1 = fully snapped.
-// Pixels darker than `blackCut` stay as-is so that soft fades to "off" survive snapping.
 export function snapToPalette(rgb, palette, strength) {
   const out = new Uint8ClampedArray(rgb.length);
   if (!strength || !palette.length) { for (let i = 0; i < rgb.length; i++) out[i] = Math.round(rgb[i]); return out; }
@@ -130,6 +129,28 @@ export function adjustOutput(rgb, { brightness = 1, saturation = 1, gamma = 1 } 
     out[i] = 255 * Math.pow(Math.max(0, r * brightness) / 255, gamma);
     out[i + 1] = 255 * Math.pow(Math.max(0, g * brightness) / 255, gamma);
     out[i + 2] = 255 * Math.pow(Math.max(0, b * brightness) / 255, gamma);
+  }
+  return out;
+}
+
+// The curtain drives each LED roughly linearly from the GIF value, while screens apply sRGB gamma,
+// so a color that looks nearly black on a phone glows clearly on the curtain. This maps the
+// on-screen look to LED drive values: gamma darkens dim tones, and anything under blackCut turns off.
+export function ledEncode(rgb, { ledGamma = 2.4, blackCut = 6 } = {}) {
+  const out = new Uint8ClampedArray(rgb.length);
+  const lut = new Uint8ClampedArray(256);
+  for (let v = 0; v < 256; v++) {
+    const e = 255 * Math.pow(v / 255, ledGamma);
+    lut[v] = e < blackCut ? 0 : Math.round(e);
+  }
+  for (let i = 0; i < rgb.length; i += 3) {
+    // Keep hue: scale all channels by the brightest channel's correction instead of per channel,
+    // so dim saturated colors don't drift (e.g. a dark orange turning red).
+    const m = Math.max(rgb[i], rgb[i + 1], rgb[i + 2]);
+    if (!m) continue;
+    const k = lut[Math.round(m)] / m;
+    if (!k) continue;
+    out[i] = rgb[i] * k; out[i + 1] = rgb[i + 1] * k; out[i + 2] = rgb[i + 2] * k;
   }
   return out;
 }

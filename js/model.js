@@ -3,7 +3,7 @@
 
 import {
   PANEL_W, PANEL_H, SCALE, WORK_W, WORK_H, newBuffer, isEmpty, hexToRgb,
-  compositeLayers, downscale, snapToPalette, adjustOutput,
+  compositeLayers, downscale, snapToPalette, adjustOutput, ledEncode,
 } from './raster.js';
 import { DEFAULT_FONT } from './font.js';
 
@@ -35,7 +35,7 @@ export function createProject(name = 'Untitled') {
     scale: SCALE,
     palette: [...DEFAULT_PALETTE],
     snap: 0,
-    output: { brightness: 1, saturation: 1, gamma: 1 },
+    output: { brightness: 1, saturation: 1, gamma: 1, ledGamma: 2.4, blackCut: 6 },
     loop: true,
     layers,
     frames: [createFrame(layers)],
@@ -83,6 +83,11 @@ export function renderPanel(project, frame) {
   const small = downscale(work, WORK_W, WORK_H, project.scale || SCALE);
   const snapped = snapToPalette(small, paletteRgb(project), project.snap || 0);
   return adjustOutput(snapped, project.output || {});
+}
+
+// What goes into the GIF: the panel output corrected for how LEDs show brightness (see ledEncode).
+export function renderPanelForLeds(project, frame) {
+  return ledEncode(renderPanel(project, frame), project.output || {});
 }
 
 // ---------- undo snapshots ----------
