@@ -401,6 +401,8 @@
     <label>Into <select id="impTarget"><option value="newLayer">New layer</option><option value="layer">Current layer</option><option value="newProject">New project</option></select></label>
     <label>Crop position <input type="range" id="impFocus" min="0" max="100" value="50"></label>
     <label class="check"><input type="checkbox" id="impLook" checked> Curtain look (deep blacks, rich colour)</label>
+    <label class="check"><input type="checkbox" id="impBg"> Remove background (make it black)</label>
+    <label id="impBgStrengthRow" hidden>Background removal strength <input type="range" id="impBgStrength" min="1" max="10" value="5"></label>
     <label class="check"><input type="checkbox" id="impBlack"> Make black transparent</label>
     <label class="check"><input type="checkbox" id="impDelays" checked> Use the clip's frame timing</label>
   </div>

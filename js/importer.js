@@ -37,9 +37,10 @@ export function knockOutBlack(buf, threshold = 12) {
   return buf;
 }
 
-export function toCels(image, { fit = 'fit', filter = 'box', blackTransparent = false, maxFrames = 200, focusX = 0.5, curtainLook = false } = {}) {
+export function toCels(image, { fit = 'fit', filter = 'box', blackTransparent = false, maxFrames = 200, focusX = 0.5, curtainLook = false, removeBg = 0 } = {}) {
   return image.frames.slice(0, maxFrames).map((f) => {
-    const cel = resizeInto(f.rgba, image.width, image.height, WORK_W, WORK_H, { filter, fit, focusX });
+    const src = removeBg ? removeBackground(f.rgba, image.width, image.height, removeBg) : f.rgba;
+    const cel = resizeInto(src, image.width, image.height, WORK_W, WORK_H, { filter, fit, focusX });
     if (curtainLook) curtainize(cel);
     if (blackTransparent) knockOutBlack(cel);
     return { cel: isEmpty(cel) ? null : cel, delay: f.delay };
@@ -86,6 +87,41 @@ export async function fetchClip(input) {
   if (/text\/html/.test(type)) throw new Error('That link is a web page, not a video or image file. Open it, long-press the clip and copy its own address, or save it to Photos.');
   const name = decodeURIComponent(url.pathname.split('/').pop() || 'clip') || 'clip';
   return new File([blob], name, { type });
+}
+
+// Blacks out the background behind a subject: starting from the frame's edges, it spreads across
+// pixels that change only gradually (plain walls, gradients, sky, studio backdrops) and stops at the
+// sharp edges of the subject. strength 1..10 sets how big a change still counts as background.
+export function removeBackground(rgba, w, h, strength = 5) {
+  const out = new Uint8ClampedArray(rgba);
+  const step = 6 + strength * 3.2, total = 40 + strength * 14;
+  const seen = new Uint8Array(w * h), queue = new Int32Array(w * h);
+  let head = 0, tail = 0;
+  // Reference colour: the median-ish average of the border, to stop slow drift into the subject.
+  let br = 0, bg = 0, bb = 0, bn = 0;
+  const push = (i) => { if (!seen[i]) { seen[i] = 1; queue[tail++] = i; } };
+  for (let x = 0; x < w; x++) { push(x); push((h - 1) * w + x); }
+  for (let y = 0; y < h; y++) { push(y * w); push(y * w + w - 1); }
+  for (let k = 0; k < tail; k++) { const p = queue[k] * 4; br += rgba[p]; bg += rgba[p + 1]; bb += rgba[p + 2]; bn++; }
+  br /= bn; bg /= bn; bb /= bn;
+  const diff = (a, b) => Math.abs(rgba[a] - rgba[b]) + Math.abs(rgba[a + 1] - rgba[b + 1]) + Math.abs(rgba[a + 2] - rgba[b + 2]);
+  // Border pixels that clearly belong to the subject (it touches the edge) are not seeds.
+  const seeds = queue.slice(0, tail);
+  head = 0; tail = 0; seen.fill(0);
+  const lum = (p) => 0.299 * rgba[p] + 0.587 * rgba[p + 1] + 0.114 * rgba[p + 2];
+  const bl = 0.299 * br + 0.587 * bg + 0.114 * bb;
+  for (const i of seeds) { const p = i * 4; if (Math.abs(lum(p) - bl) < total) push(i); }
+  while (head < tail) {
+    const i = queue[head++], x = i % w, y = (i / w) | 0, p = i * 4;
+    out[p] = out[p + 1] = out[p + 2] = 0; out[p + 3] = 255;
+    const tryN = (j) => {
+      if (seen[j]) return;
+      const q = j * 4;
+      if (diff(p, q) <= step && Math.abs(rgba[q] - br) + Math.abs(rgba[q + 1] - bg) + Math.abs(rgba[q + 2] - bb) <= total * 3) push(j);
+    };
+    if (x > 0) tryN(i - 1); if (x < w - 1) tryN(i + 1); if (y > 0) tryN(i - w); if (y < h - 1) tryN(i + w);
+  }
+  return out;
 }
 
 export function isVideoFile(file) {

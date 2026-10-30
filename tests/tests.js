@@ -9,7 +9,7 @@ import { layoutText } from '../js/font.js';
 import { sceneFromText, renderScene } from '../js/scene.js';
 import { panelFrames, ledFrames, analyse } from '../js/exporter.js';
 import { chatPrompt, parseSceneReply } from '../js/ai.js';
-import { curtainize } from '../js/importer.js';
+import { curtainize, removeBackground } from '../js/importer.js';
 
 const results = [];
 const check = (name, ok, detail = '') => results.push({ name, ok: !!ok, detail });
@@ -163,6 +163,17 @@ check('"christmas tree" gives the tree and greeting, no extra pieces', ct.elemen
   const px = Uint8ClampedArray.from([30, 30, 34, 255, 230, 120, 40, 255]);
   curtainize(px);
   check('Curtain look turns murky darks off and keeps bright colour', px[0] + px[1] + px[2] === 0 && px[4] > 240 && px[6] < 40, `[${[...px.slice(0, 3)]}] [${[...px.slice(4, 7)]}]`);
+}
+{
+  // Light grey gradient backdrop with an orange disc in the middle.
+  const w = 60, h = 60, px = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const p = (y * w + x) * 4, inDisc = (x - 30) ** 2 + (y - 30) ** 2 < 144, g = 150 + x;
+    px[p] = inDisc ? 255 : g; px[p + 1] = inDisc ? 120 : g; px[p + 2] = inDisc ? 0 : g; px[p + 3] = 255;
+  }
+  const out = removeBackground(px, w, h, 5);
+  const at = (x, y) => [...out.slice((y * w + x) * 4, (y * w + x) * 4 + 3)];
+  check('Background removal blacks out a gradient backdrop and keeps the subject', at(2, 2).join() === '0,0,0' && at(57, 50).join() === '0,0,0' && at(30, 30).join() === '255,120,0', `corner ${at(2, 2)}, centre ${at(30, 30)}`);
 }
 const shapeScene = renderScene({ frames: 8, elements: [{ type: 'shape', shape: 'circle', r: 3, color: '#ff0000', keyframes: [{ t: 0, x: 4, y: 13 }, { t: 1, x: 16, y: 13 }] }] });
 const xs2 = shapeScene.frames.map((f) => { const L = shapeScene.layers[1].id; return f.cels[L] ? centroid(f.cels[L])[0] : 0; });
