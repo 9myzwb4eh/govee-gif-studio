@@ -1443,7 +1443,8 @@ async function extractVideo() {
   const pi = pendingImport;
   if (!pi?.video) return;
   const run = ++extractRun;
-  const fps = +$('impFps').value, len = +$('impLen').value, start = +$('impStart').value || 0;
+  // The curtain takes about 100 frames, so long clips get fewer frames per second instead of being cut short.
+  const len = +$('impLen').value, start = +$('impStart').value || 0, fps = Math.min(+$('impFps').value, 100 / len);
   $('impGo').disabled = true;
   try {
     const image = await pi.video.frames(start, len, fps, (i, n) => { if (run === extractRun) $('impInfo').textContent = `Reading frames ${i} / ${n}…`; });
