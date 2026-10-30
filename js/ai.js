@@ -70,7 +70,7 @@ What looks good on this panel:
 Element types:
 - Built-in animated elements, which look polished, so prefer them when they fit. Any of these takes {color}; the still ones also take {x,y,scale}; "count" (1-6) draws several:
   Halloween: moon {x,y,r}, pumpkin, ghost {motion rise|float|cross, count}, bats {count}, spider {count}, witch {y, count}, eyes {count}, skull.
-  Christmas and winter: tree (lit tree with chasing lights and a star), snowman, gift, snow.
+  Christmas and winter: tree (lit tree with chasing lights and a star), santa (sleigh and reindeer flying across, {y}), wreath, baubles {count} (hanging ornaments), candycane, bells, snowman, gift, snow.
   New Year and celebrations: fireworks {count, colors[]}, confetti {count}, sparkles {count}, balloons {count}, cake (birthday cake with candles).
   Diwali and Indian festivals: diya (oil lamp with flame), rangoli (rotating pattern), fireworks. Holi: powder {count} (colour bursts).
   Lunar New Year: lantern (red, swaying), fireworks. Eid and Ramadan: crescent (moon and star), lantern, sparkles. Hanukkah: menorah (candles light one by one).

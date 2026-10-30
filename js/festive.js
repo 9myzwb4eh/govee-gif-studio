@@ -378,6 +378,107 @@ export const FESTIVE_PAINT = {
       ctx.restore();
     }
   },
+
+  santa(ctx, t, i, el) {
+    // Sleigh and two reindeer flying across the top, lit so they show on black.
+    const x = -80 + t * 230, y = (el.y ?? 6) * S + Math.sin(TAU * t * 2) * 5, s = el.scale ?? 1;
+    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+    const deer = (dx, dy, lead) => {
+      ctx.save(); ctx.translate(dx, dy);
+      const leg = Math.sin(TAU * t * 8 + dx) * 4;
+      ctx.fillStyle = '#d08a4a'; glow(ctx, '#ffb070', 0.6);
+      ctx.beginPath(); ctx.ellipse(0, 0, 11, 5.5, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(11, -7, 4.5, 3.5, -0.4, 0, TAU); ctx.fill();
+      ctx.fillRect(7, -6, 4, 6);
+      ctx.strokeStyle = '#d08a4a'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-7, 3); ctx.lineTo(-10 - leg, 11); ctx.moveTo(6, 3); ctx.lineTo(9 + leg, 11); ctx.stroke();
+      ctx.strokeStyle = '#f2d2a0'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(10, -10); ctx.lineTo(8, -17); ctx.lineTo(5, -19); ctx.moveTo(8, -15); ctx.lineTo(12, -18); ctx.stroke();
+      if (lead) { ctx.fillStyle = '#ff2030'; glow(ctx, '#ff2030', 2); ctx.beginPath(); ctx.arc(15.5, -6, 2.4, 0, TAU); ctx.fill(); }
+      ctx.restore();
+    };
+    deer(40, 0, false); deer(68, -3, true);
+    ctx.strokeStyle = '#ffd21f'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(12, 2); ctx.lineTo(70, -2); ctx.stroke();
+    // Sleigh
+    glow(ctx, '#ff1a2a', 1.2);
+    ctx.fillStyle = '#e8102a';
+    ctx.beginPath(); ctx.moveTo(-22, -4); ctx.lineTo(14, -4); ctx.quadraticCurveTo(18, 4, 10, 8); ctx.lineTo(-18, 8); ctx.quadraticCurveTo(-26, 2, -22, -4); ctx.fill();
+    ctx.strokeStyle = '#ffd21f'; ctx.lineWidth = 2; noGlow(ctx);
+    ctx.beginPath(); ctx.moveTo(-22, 12); ctx.lineTo(14, 12); ctx.quadraticCurveTo(20, 12, 20, 6); ctx.stroke();
+    // Santa
+    ctx.fillStyle = '#ff2a3a'; ctx.beginPath(); ctx.ellipse(-6, -10, 8, 8, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#ffe0c8'; ctx.beginPath(); ctx.arc(-4, -21, 4.5, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#ffffff'; glow(ctx, '#ffffff', 0.8); ctx.beginPath(); ctx.arc(-3, -16, 5, 0, Math.PI); ctx.fill();
+    ctx.fillStyle = '#ff2a3a'; noGlow(ctx); ctx.beginPath(); ctx.moveTo(-9, -24); ctx.lineTo(1, -24); ctx.lineTo(-10, -32); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(-10, -32, 2.2, 0, TAU); ctx.fill();
+    // Sack of presents
+    ctx.fillStyle = '#8a5a2a'; ctx.beginPath(); ctx.ellipse(-17, -9, 6, 7, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+  },
+
+  wreath(ctx, t, i, el) {
+    ctx.save(); at(ctx, el, 10, 13);
+    const g = el.color || '#1fb83a';
+    ctx.strokeStyle = g; ctx.lineWidth = 14; glow(ctx, g, 1);
+    ctx.beginPath(); ctx.arc(0, 0, 28, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = '#0d7a22'; ctx.lineWidth = 3; noGlow(ctx);
+    for (let k = 0; k < 16; k++) { const a = (k / 16) * TAU; ctx.beginPath(); ctx.arc(Math.cos(a) * 28, Math.sin(a) * 28, 5, a, a + 2); ctx.stroke(); }
+    for (let k = 0; k < 12; k++) {
+      const a = (k / 12) * TAU + 0.2, on = 0.35 + 0.65 * Math.max(0, Math.sin(TAU * (t * 2 - k / 12)));
+      const c = k % 2 ? '#ffd21f' : '#ff1a2a';
+      ctx.globalAlpha = on; ctx.fillStyle = c; glow(ctx, c, 1.3);
+      ctx.beginPath(); ctx.arc(Math.cos(a) * 28, Math.sin(a) * 28, 3.4, 0, TAU); ctx.fill();
+    }
+    ctx.globalAlpha = 1; ctx.fillStyle = '#ff1a2a'; glow(ctx, '#ff1a2a', 1);
+    ctx.beginPath(); ctx.moveTo(0, 30); ctx.lineTo(-16, 22); ctx.lineTo(-16, 38); ctx.closePath(); ctx.moveTo(0, 30); ctx.lineTo(16, 22); ctx.lineTo(16, 38); ctx.closePath(); ctx.fill();
+    ctx.fillRect(-6, 30, 4, 14); ctx.fillRect(2, 30, 4, 14);
+    ctx.restore();
+  },
+
+  baubles(ctx, t, i, el) {
+    const n = clamp(el.count ?? 3, 1, 5), cols = el.color ? [el.color] : ['#ff1a2a', '#ffd21f', '#2a8bff', '#ff2adf', '#3ddc4a'];
+    for (let k = 0; k < n; k++) {
+      const x0 = ((k + 0.5) / n) * 100, len = 30 + ((k * 37) % 3) * 16, sw = Math.sin(TAU * (t + k / n)) * 0.18;
+      const bx = x0 + Math.sin(sw) * len, by = Math.cos(sw) * len, c = cols[k % cols.length], r = 12;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(230,220,180,0.75)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(bx, by - r); ctx.stroke();
+      ctx.fillStyle = '#ffd21f'; ctx.fillRect(bx - 3.5, by - r - 4, 7, 5);
+      glow(ctx, c, 1.6);
+      ctx.fillStyle = radial(ctx, bx - 4, by - 4, r * 1.6, [[0, '#ffffff'], [0.3, c], [1, c]]);
+      ctx.beginPath(); ctx.arc(bx, by, r, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
+  },
+
+  candycane(ctx, t, i, el) {
+    ctx.save(); at(ctx, el, 10, 13);
+    ctx.rotate(Math.sin(TAU * t) * 0.08);
+    const path = () => { ctx.beginPath(); ctx.moveTo(6, 44); ctx.lineTo(6, -22); ctx.arc(-8, -22, 14, 0, Math.PI, true); ctx.lineTo(-22, -12); };
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 11; glow(ctx, '#ffffff', 1); path(); ctx.stroke();
+    // Stripes march along the cane.
+    ctx.strokeStyle = el.color || '#ff1a2a'; ctx.lineWidth = 11; noGlow(ctx); ctx.lineCap = 'butt';
+    ctx.setLineDash([7, 7]); ctx.lineDashOffset = -t * 28; path(); ctx.stroke(); ctx.setLineDash([]);
+    ctx.restore();
+  },
+
+  bells(ctx, t, i, el) {
+    ctx.save(); at(ctx, el, 10, 13);
+    ctx.scale(1.4, 1.4);
+    const c = el.color || '#ffc21f';
+    for (const side of [-1, 1]) {
+      ctx.save(); ctx.translate(side * 10, -14); ctx.rotate(side * 0.25 + Math.sin(TAU * t * 2 + (side > 0 ? Math.PI : 0)) * 0.35);
+      glow(ctx, c, 1.5);
+      ctx.fillStyle = radial(ctx, -5, 10, 30, [[0, '#fff3c0'], [0.4, c], [1, '#a06a00']]);
+      ctx.beginPath(); ctx.moveTo(-6, 4); ctx.quadraticCurveTo(-8, 22, -18, 32); ctx.lineTo(18, 32); ctx.quadraticCurveTo(8, 22, 6, 4); ctx.quadraticCurveTo(0, -2, -6, 4); ctx.fill();
+      ctx.fillStyle = '#fff3c0'; ctx.beginPath(); ctx.arc(0, 34, 4, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle = '#ff1a2a'; glow(ctx, '#ff1a2a', 1);
+    ctx.beginPath(); ctx.moveTo(0, -16); ctx.lineTo(-16, -26); ctx.lineTo(-16, -8); ctx.closePath(); ctx.moveTo(0, -16); ctx.lineTo(16, -26); ctx.lineTo(16, -8); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, -16, 4, 0, TAU); ctx.fill();
+    ctx.restore();
+  },
 };
 
 // Words that name each element in the text scene builder.
@@ -401,13 +502,18 @@ export const FESTIVE_SUBJECTS = {
   powder: ['powder', 'gulal', 'color splash', 'colour splash', 'paint splash', 'splash', 'splashes'],
   leaves: ['leaf', 'leaves', 'autumn', 'fall leaves'],
   sparkles: ['sparkle', 'sparkles', 'sparkling', 'glitter', 'shimmer', 'magic'],
+  santa: ['santa', 'sleigh', 'reindeer', 'rudolph', 'father christmas', 'st nick'],
+  wreath: ['wreath', 'wreaths'],
+  baubles: ['bauble', 'baubles', 'ornament', 'ornaments', 'decorations'],
+  candycane: ['candy cane', 'candy canes', 'candycane', 'candycanes'],
+  bells: ['bell', 'bells', 'jingle'],
 };
 
 // Still subjects that take a slot in the layout; the rest move across the whole panel.
-export const FESTIVE_MAINS = ['tree', 'snowman', 'gift', 'diya', 'lantern', 'egg', 'bunny', 'crescent', 'menorah', 'shamrock', 'cake', 'flower', 'rangoli'];
+export const FESTIVE_MAINS = ['wreath', 'candycane', 'bells', 'tree', 'snowman', 'gift', 'diya', 'lantern', 'egg', 'bunny', 'crescent', 'menorah', 'shamrock', 'cake', 'flower', 'rangoli'];
 
 // Draw order back to front.
-export const FESTIVE_ORDER = { back: ['sparkles', 'fireworks', 'powder', 'leaves', 'balloons'], front: ['confetti'] };
+export const FESTIVE_ORDER = { back: ['sparkles', 'fireworks', 'powder', 'leaves', 'balloons'], front: ['baubles', 'santa', 'confetti'] };
 
 // A festival name alone builds a whole scene. Elements are added only when the description names
 // no subjects of its own; the greeting is used only when there's no lettering.
@@ -416,20 +522,20 @@ function nextYear() {
   return d.getMonth() >= 9 ? d.getFullYear() + 1 : d.getFullYear();
 }
 export const FESTIVALS = [
-  { words: ['halloween', 'spooky', 'trick or treat'], label: 'Halloween', els: [{ type: 'moon' }, { type: 'bats', count: 3 }, { type: 'pumpkin' }], text: 'BOO', color: '#ff6a00' },
-  { words: ['christmas', 'xmas', 'santa', 'noel', 'yuletide'], label: 'Christmas', els: [{ type: 'snow' }, { type: 'tree' }], text: 'MERRY CHRISTMAS', color: '#ff1a2a' },
-  { words: ['new year', 'newyear', 'nye', "new year's", 'countdown'], label: 'New Year', els: [{ type: 'fireworks', count: 4 }, { type: 'sparkles' }], text: () => `HAPPY ${nextYear()}`, color: '#ffd21f', skipWhen: ['lunar', 'chinese'] },
-  { words: ['lunar new year', 'chinese new year', 'spring festival', 'tet', 'seollal'], label: 'Lunar New Year', els: [{ type: 'fireworks', count: 3, color: '#ffd21f' }, { type: 'lantern' }], text: 'HAPPY NEW YEAR', color: '#ffd21f' },
-  { words: ['diwali', 'deepavali', 'dipawali', 'deepawali'], label: 'Diwali', els: [{ type: 'fireworks', count: 3 }, { type: 'diya' }], text: 'HAPPY DIWALI', color: '#ffb21f' },
-  { words: ['easter'], label: 'Easter', els: [{ type: 'bunny' }, { type: 'egg', count: 3 }], text: 'HAPPY EASTER', color: '#ff4fa8' },
-  { words: ['eid', 'ramadan', 'ramzan', 'mubarak'], label: 'Eid', els: [{ type: 'sparkles' }, { type: 'crescent' }], text: () => null, color: '#ffd21f' },
-  { words: ['hanukkah', 'chanukah', 'hanukah'], label: 'Hanukkah', els: [{ type: 'sparkles', color: '#4f8bff' }, { type: 'menorah' }], text: 'HAPPY HANUKKAH', color: '#4f8bff' },
-  { words: ['holi'], label: 'Holi', els: [{ type: 'powder', count: 6 }], text: 'HAPPY HOLI', color: '#ff2adf' },
-  { words: ['valentine', 'valentines', "valentine's"], label: "Valentine's", els: [{ type: 'sparkles', color: '#ff4fa8' }, { type: 'heart' }], text: 'LOVE', color: '#ff4fa8' },
+  { words: ['halloween', 'spooky', 'trick or treat'], label: 'Halloween', more: [{ els: [{ type: 'bats', count: 4 }, { type: 'ghost', motion: 'rise' }], text: 'BOO' }, { els: [{ type: 'stars' }, { type: 'moon' }, { type: 'witch' }], text: 'HAPPY HALLOWEEN' }, { els: [{ type: 'eyes', count: 4 }, { type: 'skull' }], text: 'TRICK OR TREAT' }, { els: [{ type: 'spider', count: 2 }, { type: 'pumpkin', count: 2 }], text: 'SPOOKY' }], els: [{ type: 'moon' }, { type: 'bats', count: 3 }, { type: 'pumpkin' }], text: 'BOO', color: '#ff6a00' },
+  { words: ['christmas', 'xmas', 'santa', 'noel', 'yuletide'], label: 'Christmas', more: [{ els: [{ type: 'stars' }, { type: 'snow' }, { type: 'santa' }], text: 'HO HO HO' }, { els: [{ type: 'sparkles' }, { type: 'baubles', count: 3 }], text: 'MERRY XMAS' }, { els: [{ type: 'snow' }, { type: 'snowman' }], text: 'LET IT SNOW' }, { els: [{ type: 'sparkles' }, { type: 'wreath' }], text: 'JOY' }, { els: [{ type: 'snow' }, { type: 'bells' }], text: 'JINGLE BELLS' }, { els: [{ type: 'snow' }, { type: 'candycane', count: 2 }], text: 'SEASONS GREETINGS' }, { els: [{ type: 'sparkles' }, { type: 'gift', count: 3 }], text: 'MERRY CHRISTMAS' }], els: [{ type: 'snow' }, { type: 'tree' }], text: 'MERRY CHRISTMAS', color: '#ff1a2a' },
+  { words: ['new year', 'newyear', 'nye', "new year's", 'countdown'], label: 'New Year', more: [{ els: [{ type: 'balloons', count: 5 }, { type: 'confetti', count: 24 }], text: 'CHEERS' }, { els: [{ type: 'fireworks', count: 6, colors: ['#ffd21f', '#ffffff', '#ffb21f'] }], text: () => `HELLO ${nextYear()}` }, { els: [{ type: 'sparkles', count: 20 }, { type: 'bells' }], text: 'HAPPY NEW YEAR' }], els: [{ type: 'fireworks', count: 4 }, { type: 'sparkles' }], text: () => `HAPPY ${nextYear()}`, color: '#ffd21f', skipWhen: ['lunar', 'chinese'] },
+  { words: ['lunar new year', 'chinese new year', 'spring festival', 'tet', 'seollal'], label: 'Lunar New Year', more: [{ els: [{ type: 'sparkles', color: '#ffd21f' }, { type: 'lantern', count: 2 }], text: 'GONG XI FA CAI' }, { els: [{ type: 'fireworks', count: 5, colors: ['#ff1a2a', '#ffd21f'] }], text: 'HAPPY NEW YEAR' }], els: [{ type: 'fireworks', count: 3, color: '#ffd21f' }, { type: 'lantern' }], text: 'HAPPY NEW YEAR', color: '#ffd21f' },
+  { words: ['diwali', 'deepavali', 'dipawali', 'deepawali'], label: 'Diwali', more: [{ els: [{ type: 'sparkles', color: '#ffd21f' }, { type: 'rangoli' }], text: 'SHUBH DIWALI' }, { els: [{ type: 'fireworks', count: 2 }, { type: 'diya', count: 3 }], text: 'HAPPY DIWALI' }, { els: [{ type: 'fireworks', count: 6 }, { type: 'sparkles' }], text: 'HAPPY DIWALI' }, { els: [{ type: 'sparkles', color: '#ffb21f' }, { type: 'lantern', color: '#ff6a00' }], text: 'DEEPAVALI' }], els: [{ type: 'fireworks', count: 3 }, { type: 'diya' }], text: 'HAPPY DIWALI', color: '#ffb21f' },
+  { words: ['easter'], label: 'Easter', more: [{ els: [{ type: 'sparkles' }, { type: 'egg', count: 4 }], text: 'HAPPY EASTER' }, { els: [{ type: 'flower', count: 3 }], text: 'SPRING' }, { els: [{ type: 'bunny' }], text: 'HOP HOP' }], els: [{ type: 'bunny' }, { type: 'egg', count: 3 }], text: 'HAPPY EASTER', color: '#ff4fa8' },
+  { words: ['eid', 'ramadan', 'ramzan', 'mubarak'], label: 'Eid', more: [{ els: [{ type: 'sparkles', color: '#ffd21f' }, { type: 'lantern', color: '#ffb21f', count: 2 }] }, { els: [{ type: 'fireworks', count: 3, colors: ['#ffd21f', '#3ddc4a', '#ffffff'] }, { type: 'crescent' }] }], els: [{ type: 'sparkles' }, { type: 'crescent' }], text: () => null, color: '#ffd21f' },
+  { words: ['hanukkah', 'chanukah', 'hanukah'], label: 'Hanukkah', more: [{ els: [{ type: 'sparkles', color: '#ffffff', count: 20 }, { type: 'menorah', color: '#c8d0e0' }], text: 'CHAG SAMEACH' }], els: [{ type: 'sparkles', color: '#4f8bff' }, { type: 'menorah' }], text: 'HAPPY HANUKKAH', color: '#4f8bff' },
+  { words: ['holi'], label: 'Holi', more: [{ els: [{ type: 'powder', count: 8 }, { type: 'confetti', count: 16 }], text: 'BURA NA MANO HOLI HAI' }], els: [{ type: 'powder', count: 6 }], text: 'HAPPY HOLI', color: '#ff2adf' },
+  { words: ['valentine', 'valentines', "valentine's"], label: "Valentine's", more: [{ els: [{ type: 'sparkles', color: '#ff4fa8' }, { type: 'heart', count: 3 }], text: 'BE MINE' }, { els: [{ type: 'flower', color: '#ff1a2a', count: 2 }], text: 'I LOVE YOU' }], els: [{ type: 'sparkles', color: '#ff4fa8' }, { type: 'heart' }], text: 'LOVE', color: '#ff4fa8' },
   { words: ['patrick', "patrick's", 'patricks', 'paddy', 'paddys', "paddy's"], label: "St Patrick's", els: [{ type: 'sparkles', color: '#3ddc4a' }, { type: 'shamrock' }], text: 'LUCKY', color: '#3ddc4a' },
-  { words: ['thanksgiving'], label: 'Thanksgiving', els: [{ type: 'leaves' }, { type: 'pumpkin' }], text: 'THANKS', color: '#ffb21f' },
-  { words: ['birthday', 'bday', 'b-day'], label: 'Birthday', els: [{ type: 'balloons' }, { type: 'confetti', count: 18 }, { type: 'cake' }], text: 'HAPPY BIRTHDAY', color: '#ff4fa8' },
-  { words: ['july', 'independence'], label: 'Independence Day', els: [{ type: 'stars' }, { type: 'fireworks', count: 4, colors: ['#ff1a2a', '#ffffff', '#2a6bff'] }], text: 'USA', color: '#ff1a2a' },
+  { words: ['thanksgiving'], label: 'Thanksgiving', more: [{ els: [{ type: 'leaves', count: 16 }], text: 'GIVE THANKS' }], els: [{ type: 'leaves' }, { type: 'pumpkin' }], text: 'THANKS', color: '#ffb21f' },
+  { words: ['birthday', 'bday', 'b-day'], label: 'Birthday', more: [{ els: [{ type: 'balloons', count: 6 }], text: 'HAPPY BDAY' }, { els: [{ type: 'fireworks', count: 3 }, { type: 'confetti', count: 20 }], text: 'PARTY TIME' }, { els: [{ type: 'sparkles' }, { type: 'cake' }], text: 'MAKE A WISH' }], els: [{ type: 'balloons' }, { type: 'confetti', count: 18 }, { type: 'cake' }], text: 'HAPPY BIRTHDAY', color: '#ff4fa8' },
+  { words: ['july', 'independence'], label: 'Independence Day', more: [{ els: [{ type: 'confetti', count: 20, colors: ['#ff1a2a', '#ffffff', '#2a6bff'] }, { type: 'fireworks', count: 3, colors: ['#ff1a2a', '#ffffff', '#2a6bff'] }], text: 'HAPPY 4TH' }], els: [{ type: 'stars' }, { type: 'fireworks', count: 4, colors: ['#ff1a2a', '#ffffff', '#2a6bff'] }], text: 'USA', color: '#ff1a2a' },
   { words: ['wedding', 'anniversary', 'engagement'], label: 'Wedding', els: [{ type: 'sparkles' }, { type: 'heart', count: 2 }], text: 'LOVE', color: '#ffd9e6' },
   { words: ['mothers', "mother's", 'mom', 'mum', 'mama'], label: "Mother's Day", els: [{ type: 'flower', count: 3 }], text: 'LOVE MOM', color: '#ff4fa8' },
   { words: ['navratri', 'garba', 'dussehra', 'durga', 'pongal', 'onam', 'ganesh', 'ganpati'], label: 'Indian festival', els: [{ type: 'sparkles', color: '#ffd21f' }, { type: 'rangoli' }], text: null, color: '#ffb21f' },
@@ -437,8 +543,15 @@ export const FESTIVALS = [
   { words: ['winter', 'snowy night', 'holidays', 'holiday'], label: 'Winter', els: [{ type: 'snow' }, { type: 'snowman' }], text: null, color: '#19e0d0' },
 ];
 
-// Eid's greeting follows which word was used.
-export function festivalText(f, lower) {
-  if (f.label === 'Eid') return /ramadan|ramzan/.test(lower) ? 'RAMADAN KAREEM' : 'EID MUBARAK';
-  return typeof f.text === 'function' ? f.text() : f.text;
+// Festivals come in several versions; "Try another" steps through them. Version 0 is the main one.
+export function festivalVersions(f) {
+  return [{ els: f.els, text: f.text }, ...(f.more || [])];
+}
+
+export function festivalVersion(f, lower, n = 0) {
+  const all = festivalVersions(f), v = all[((n % all.length) + all.length) % all.length];
+  // Eid's greeting follows which word was used.
+  let text = typeof v.text === 'function' ? v.text() : v.text;
+  if (f.label === 'Eid') text = /ramadan|ramzan/.test(lower) ? 'RAMADAN KAREEM' : 'EID MUBARAK';
+  return { els: v.els, text };
 }

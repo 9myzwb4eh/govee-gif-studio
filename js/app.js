@@ -1178,14 +1178,19 @@ function showCreated(p, understood = null, note = '') {
   step();
 }
 
-const crBuild = guard(() => {
+let crVersion = 0, crLastText = '';
+const crBuild = guard((again = false) => {
   const text = $('crPrompt').value.trim();
   if (!text) { toast('Type a description first.'); return; }
-  const { scene, understood } = sceneFromText(text);
-  showCreated(renderScene(scene), understood);
+  crVersion = again === true && text === crLastText ? crVersion + 1 : 0;
+  crLastText = text;
+  const { scene, understood } = sceneFromText(text, { version: crVersion });
+  const p = renderScene(scene);
+  showCreated(p, understood, crVersion ? `Version ${crVersion + 1} · ${p.frames.length} frames` : '');
 });
+$('crAgain').onclick = () => crBuild(true);
 
-$('crBuild').onclick = crBuild;
+$('crBuild').onclick = () => crBuild();
 $('crPrompt').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); crBuild(); } });
 $('crKey').onchange = () => setKey($('crKey').value.trim());
 $('crModel').onchange = () => setPref('aiModel', $('crModel').value);

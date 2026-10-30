@@ -9,7 +9,7 @@ import { celFromCanvas, twinkle, fire, mulberry, EASINGS } from './effects.js';
 import { isEmpty, SCALE } from './raster.js';
 import { layoutText, DEFAULT_FONT } from './font.js';
 import { drawBat, drawGhost, drawWitch, radial, linear } from './templates.js';
-import { FESTIVE_PAINT, FESTIVE_SUBJECTS, FESTIVE_MAINS, FESTIVE_ORDER, FESTIVALS, festivalText } from './festive.js';
+import { FESTIVE_PAINT, FESTIVE_SUBJECTS, FESTIVE_MAINS, FESTIVE_ORDER, FESTIVALS, festivalVersion } from './festive.js';
 
 const TAU = Math.PI * 2;
 const S = SCALE;
@@ -402,7 +402,8 @@ const BACKGROUNDS = {
 };
 
 // Turns a short description into a scene. Returns { scene, understood: [labels] }.
-export function sceneFromText(input) {
+// version picks among a festival's scenes and reshuffles random layouts (the "Try another" button).
+export function sceneFromText(input, { version = 0 } = {}) {
   const raw = String(input || '').trim();
   const lower = raw.toLowerCase();
   // Commas and "and"/"with" split the description into clauses; colors and counts only apply within a clause.
@@ -473,8 +474,9 @@ export function sceneFromText(input) {
   const fest = FESTIVALS.find((f) => has(f.words) && !(f.skipWhen && has(f.skipWhen)));
   if (fest) {
     understood.push(fest.label);
-    if (!mains.length) for (const e of fest.els) if (!elements.some((x) => x.type === e.type)) addElement({ ...e });
-    if (!lettering) { const g = festivalText(fest, lower); if (g) lettering = g; }
+    const fv = festivalVersion(fest, lower, version);
+    if (!mains.length) for (const e of fv.els) if (!elements.some((x) => x.type === e.type)) addElement({ ...e });
+    if (!lettering && fv.text) lettering = fv.text;
     letteringColor = fest.color;
   }
 
@@ -490,6 +492,7 @@ export function sceneFromText(input) {
     if (has(['pulse', 'pulsing', 'flash', 'flashing', 'blink', 'blinking'])) el.motion = 'pulse';
     if (has(['scroll', 'scrolling', 'marquee'])) el.motion = 'scroll';
     if (slots > 1) el.y = ys[slots - 1] - 2;
+    else if (elements.some((e) => e.type === 'baubles' || e.type === 'witch')) el.y = 21; // keep clear of things crossing the middle
     elements.push(el);
     understood.push(`text "${el.text}"`);
   }
@@ -512,6 +515,7 @@ export function sceneFromText(input) {
   }
   if (elements.some((e) => ['witch', 'bats', 'fireworks', 'balloons', 'powder'].includes(e.type))) frames = Math.max(frames, 48);
 
+  if (version) elements.forEach((e, k) => { e.seed = 3 + version * 13 + k * 7; });
   const name = raw ? raw.replace(/["“”]/g, '').slice(0, 32) : 'Scene';
   return { scene: { name, frames, frameMs, background, elements }, understood };
 }

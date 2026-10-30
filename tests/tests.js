@@ -105,7 +105,7 @@ for (const t of TEMPLATES) {
 }
 
 // 8. Text-to-scene builder.
-for (const prompt of ['orange pumpkin, stars, "BOO"', 'ghost rising, three bats, moon', 'witch flying across the moon with stars', 'lightning storm with rain', 'red beating heart, "LOVE" pulsing', 'snow falling slowly, "HAPPY HOLIDAYS"', 'skull with fire and green eyes', 'hello there', 'three ghosts flying', 'three witches', 'four pumpkins, "BOO"', '2 spiders', 'Christmas', 'Happy Diwali', 'New Year fireworks', 'Eid Mubarak', 'Easter', 'birthday "SAM"', 'Lunar New Year', 'Hanukkah', 'Holi', 'Halloween', 'christmas tree']) {
+for (const prompt of ['orange pumpkin, stars, "BOO"', 'ghost rising, three bats, moon', 'witch flying across the moon with stars', 'lightning storm with rain', 'red beating heart, "LOVE" pulsing', 'snow falling slowly, "HAPPY HOLIDAYS"', 'skull with fire and green eyes', 'hello there', 'three ghosts flying', 'three witches', 'four pumpkins, "BOO"', '2 spiders', 'Christmas', 'Happy Diwali', 'New Year fireworks', 'Eid Mubarak', 'Easter', 'birthday "SAM"', 'Lunar New Year', 'Hanukkah', 'Holi', 'Halloween', 'christmas tree', 'santa sleigh with snow', 'wreath', '3 baubles', 'candy cane', 'jingle bells']) {
   const { scene, understood } = sceneFromText(prompt);
   const sp = renderScene(scene);
   const r = analyse(ledFrames(sp));
@@ -121,7 +121,7 @@ const wiLit = (f) => { const c = wiScene.frames[f].cels[wiL]; let n = 0; if (c) 
 check('"three witches" draws three witches', wi.elements[0].count === 3 && wiLit(5) > 0, `count ${wi.elements[0].count}, ${wiLit(5)} lit pixels`);
 const xm = sceneFromText('Christmas').scene;
 check('"Christmas" builds a tree, snow and a greeting', ['tree', 'snow', 'text'].every((t) => xm.elements.some((e) => e.type === t)), xm.elements.map((e) => e.type).join(', '));
-const ct = sceneFromText('christmas tree').scene;
+const ct = sceneFromText('christmas tree', 'santa sleigh with snow', 'wreath', '3 baubles', 'candy cane', 'jingle bells').scene;
 check('"christmas tree" gives the tree and greeting, no extra pieces', ct.elements.map((e) => e.type).join() === 'tree,text', ct.elements.map((e) => e.type).join(', '));
 {
   const xp = renderScene(sceneFromText('Christmas').scene);
@@ -148,6 +148,15 @@ check('"christmas tree" gives the tree and greeting, no extra pieces', ct.elemen
   };
   const fails = Object.entries(variants).filter(([, v]) => { try { return !parseSceneReply(v).elements.length; } catch (e) { return true; } }).map(([k]) => k);
   check('Pasted replies are repaired (quotes, comments, commas, bare keys, prose, cut off)', !fails.length, fails.join(', ') || `${Object.keys(variants).length} variants read`);
+}
+{
+  const seen = new Set();
+  for (let v = 0; v < 8; v++) {
+    const sc = sceneFromText('Christmas', { version: v }).scene;
+    seen.add(sc.elements.map((e) => e.type).join('+'));
+    renderScene(sc);
+  }
+  check('"Christmas" has 8 different versions that all render', seen.size === 8, [...seen].join(' | '));
 }
 const shapeScene = renderScene({ frames: 8, elements: [{ type: 'shape', shape: 'circle', r: 3, color: '#ff0000', keyframes: [{ t: 0, x: 4, y: 13 }, { t: 1, x: 16, y: 13 }] }] });
 const xs2 = shapeScene.frames.map((f) => { const L = shapeScene.layers[1].id; return f.cels[L] ? centroid(f.cels[L])[0] : 0; });
