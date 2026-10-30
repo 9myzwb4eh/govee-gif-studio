@@ -8,7 +8,8 @@ import {
 import { DEFAULT_FONT } from './font.js';
 
 export const MAX_LAYERS = 10;
-export const LIMITS = { frames: 100, bytes: 500 * 1024 };
+// Govee publishes no limits. 100 KB follows a Curtain Lights 2 owner's estimate of the curtain's memory.
+export const LIMITS = { frames: 100, bytes: 100 * 1024 };
 export const DEFAULT_PALETTE = ['#000000', '#3b1260', '#0f1838', '#ff6a00', '#ffd21f', '#3ddc4a', '#ffffff', '#e0102a'];
 
 let uid = 0;

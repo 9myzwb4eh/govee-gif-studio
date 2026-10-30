@@ -1,8 +1,8 @@
 // Turning projects into files, and getting files onto the device.
 
-import { encodeGIF } from './gif.js';
+import { encodeGIF, medianCut } from './gif.js';
 import { renderPanel, renderPanelForLeds, frameTime, LIMITS, PANEL_W, PANEL_H } from './model.js';
-import { countColors } from './raster.js';
+import { countColors, snapToPalette } from './raster.js';
 import { panelToCanvas } from './led.js';
 
 // Frames as the preview shows them (how the curtain will look).
@@ -12,7 +12,24 @@ export function panelFrames(project) {
 
 // Frames as stored in the GIF (LED-corrected values that make the curtain look like the preview).
 export function ledFrames(project) {
-  return project.frames.map((f) => ({ rgb: renderPanelForLeds(project, f), delay: frameTime(f) }));
+  const frames = project.frames.map((f) => ({ rgb: renderPanelForLeds(project, f), delay: frameTime(f) }));
+  return reduceColors(frames, project.output?.maxColors);
+}
+
+// Fewer colors, shared by every frame, make a much smaller GIF (the curtain's memory is small).
+export function reduceColors(frames, maxColors) {
+  if (!maxColors || maxColors >= 256) return frames;
+  const hist = new Map();
+  for (const { rgb } of frames) for (let i = 0; i < rgb.length; i += 3) {
+    const k = (rgb[i] << 16) | (rgb[i + 1] << 8) | rgb[i + 2];
+    hist.set(k, (hist.get(k) || 0) + 1);
+  }
+  if (hist.size <= maxColors) return frames;
+  // Black (LEDs off) always stays exact, so dark areas don't pick up a tint.
+  const black = hist.get(0) || 0; hist.delete(0);
+  const palette = medianCut(hist, maxColors - (black ? 1 : 0));
+  if (black) palette.push([0, 0, 0]);
+  return frames.map((f) => ({ ...f, rgb: snapToPalette(f.rgb, palette, 1) }));
 }
 
 export function buildGIF(frames, loop = true) {
@@ -24,7 +41,7 @@ export function analyse(frames, loop = true) {
   const bytes = buildGIF(frames, loop);
   const warnings = [];
   if (frames.length > LIMITS.frames) warnings.push(`${frames.length} frames is over the ${LIMITS.frames}-frame guideline. The Govee app may reject or trim it.`);
-  if (bytes.length > LIMITS.bytes) warnings.push(`${formatBytes(bytes.length)} is over the ${formatBytes(LIMITS.bytes)} guideline.`);
+  if (bytes.length > LIMITS.bytes) warnings.push(`${formatBytes(bytes.length)} is over the ${formatBytes(LIMITS.bytes)} guideline (owners report the curtain has about 100 KB of memory). Try fewer colors below, or fewer frames.`);
   const fast = frames.filter((f) => f.delay < 20).length;
   if (fast) warnings.push(`${fast} frame(s) are shorter than 20 ms. Most players stretch those to 100 ms, so use 20 ms or more.`);
   const heavy = frames.filter((f) => countColors(f.rgb) > 256).length;

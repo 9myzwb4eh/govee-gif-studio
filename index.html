@@ -411,6 +411,15 @@
       <input type="range" id="outBlack" min="0" max="40" value="6">
     </div>
   </details>
+  <div class="field">
+    <label for="outColors">Colors in the GIF</label>
+    <select id="outColors">
+      <option value="0">All (best quality)</option>
+      <option value="64">64 (smaller)</option>
+      <option value="32">32 (much smaller)</option>
+      <option value="16">16 (smallest)</option>
+    </select>
+  </div>
   <label class="check"><input type="checkbox" id="expLoop" checked> Loop forever</label>
   <div class="exp-actions">
     <button class="btn primary" id="expGif"><svg><use href="#i-export"/></svg>Download GIF</button>
@@ -490,10 +499,12 @@
     <section>
       <h3>Export and upload</h3>
       <ol>
-        <li>Press <b>Export</b> and check the size and frame count. Over 100 frames or 500 KB shows a warning. Govee does not publish exact limits, so these are safe guidelines.</li>
+        <li>Press <b>Export</b> and check the size and frame count. Over 100 frames or 100 KB shows a warning. Govee does not publish limits; owners estimate the curtain holds about 100 KB, and fewer colors (in Export) shrink a GIF a lot.</li>
         <li>On iPhone, tap <b>Share / Save Image</b> → <b>Save Image</b>. On a computer, <b>Download GIF</b> and move it to your phone (AirDrop or iCloud Drive).</li>
-        <li>In Govee Home, open your Curtain Lights 2, go to <b>DIY</b>, create a new design, and choose to upload a GIF.</li>
-        <li>Pick the GIF from Photos (the <b>Animated</b> album).</li>
+        <li>In Govee Home, open your Curtain Lights 2 and turn it on. Go to <b>DIY</b>, tap <b>+</b>, choose the <b>Simple</b> tab, set the effect to <b>GIF</b>, and tap the tick.</li>
+        <li>Tap <b>+</b> under Upload GIF, pick it from Photos (the <b>Animated</b> album), then tap <b>Apply</b>.</li>
+        <li>If Govee says <b>Application failed</b>, stay close to the curtain (it uploads over Bluetooth), reconnect, and apply again.</li>
+        <li>Auto-Play in Govee switches effects only every 5 minutes and doesn't resume after a timer turns the lights back on, so start it again by hand.</li>
       </ol>
       <p>Save the <b>Project file</b> too, so you can reopen and edit later.</p>
     </section>

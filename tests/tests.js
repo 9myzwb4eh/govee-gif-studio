@@ -122,6 +122,14 @@ const xm = sceneFromText('Christmas').scene;
 check('"Christmas" builds a tree, snow and a greeting', ['tree', 'snow', 'text'].every((t) => xm.elements.some((e) => e.type === t)), xm.elements.map((e) => e.type).join(', '));
 const ct = sceneFromText('christmas tree').scene;
 check('"christmas tree" gives the tree and greeting, no extra pieces', ct.elements.map((e) => e.type).join() === 'tree,text', ct.elements.map((e) => e.type).join(', '));
+{
+  const xp = renderScene(sceneFromText('Christmas').scene);
+  const full = analyse(ledFrames(xp)).size;
+  xp.output.maxColors = 16;
+  const small = ledFrames(xp), smallSize = analyse(small).size;
+  const used = new Set(); for (const f of small) for (let i = 0; i < f.rgb.length; i += 3) used.add((f.rgb[i] << 16) | (f.rgb[i + 1] << 8) | f.rgb[i + 2]);
+  check('16-color export shrinks the GIF and keeps black exact', used.size <= 16 && used.has(0) && smallSize < full * 0.8, `${(full / 1024).toFixed(1)} KB → ${(smallSize / 1024).toFixed(1)} KB, ${used.size} colors`);
+}
 const shapeScene = renderScene({ frames: 8, elements: [{ type: 'shape', shape: 'circle', r: 3, color: '#ff0000', keyframes: [{ t: 0, x: 4, y: 13 }, { t: 1, x: 16, y: 13 }] }] });
 const xs2 = shapeScene.frames.map((f) => { const L = shapeScene.layers[1].id; return f.cels[L] ? centroid(f.cels[L])[0] : 0; });
 check('AI shape keyframes move smoothly', xs2.every((x, i) => !i || x > xs2[i - 1]), xs2.map((x) => (x / 5).toFixed(1)).join(' → '));

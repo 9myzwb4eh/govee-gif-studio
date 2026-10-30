@@ -3,7 +3,7 @@
 import {
   createProject, createLayer, createFrame, writableCel, compositeFrame, renderPanel, snapshot, restore,
   serialize, deserialize, frameTime, totalTime, paletteRgb, MAX_LAYERS, DEFAULT_PALETTE, newId,
-  WORK_W, WORK_H, PANEL_W, PANEL_H, SCALE,
+  WORK_W, WORK_H, PANEL_W, PANEL_H, SCALE, LIMITS,
 } from './model.js';
 import { hexToRgb, rgbToHex, newBuffer, downscale, countColors, blendOver, isEmpty } from './raster.js';
 import { Stroke, drawRect, drawEllipse, drawLine, floodRegion, fillRegion, gradientBuffer } from './paint.js';
@@ -1431,6 +1431,7 @@ function renderExport() {
   $('outSatOut').textContent = `${$('outSat').value}%`;
   $('outGamma').value = Math.round((project.output.ledGamma ?? 2.4) * 10);
   $('outBlack').value = project.output.blackCut ?? 6;
+  $('outColors').value = String(project.output.maxColors || 0);
   $('outGammaOut').textContent = gammaLabel(project.output.ledGamma ?? 2.4);
   $('outBlackOut').textContent = `${$('outBlack').value}`;
   $('expLoop').checked = project.loop !== false;
@@ -1446,7 +1447,7 @@ function refreshExport() {
   $('expSize').textContent = formatBytes(expData.size);
   $('expTime').textContent = `${(expData.duration / 1000).toFixed(1)} s`;
   $('expFrames').parentElement.classList.toggle('bad', expData.frames > 100);
-  $('expSize').parentElement.classList.toggle('bad', expData.size > 500 * 1024);
+  $('expSize').parentElement.classList.toggle('bad', expData.size > LIMITS.bytes);
   showWarnings($('expWarn'), expData.warnings);
   const c = $('expPreview');
   fitCanvas(c, 120);
@@ -1463,7 +1464,7 @@ function refreshExport() {
 
 function showWarnings(ul, warnings) {
   ul.textContent = '';
-  if (!warnings.length) { const li = document.createElement('li'); li.className = 'ok'; li.textContent = 'Within the 100-frame and 500 KB guidelines. Ready for the Govee app.'; ul.appendChild(li); return; }
+  if (!warnings.length) { const li = document.createElement('li'); li.className = 'ok'; li.textContent = 'Within the 100-frame and 100 KB guidelines. Ready for the Govee app.'; ul.appendChild(li); return; }
   for (const w of warnings) { const li = document.createElement('li'); li.textContent = w; ul.appendChild(li); }
 }
 
@@ -1480,6 +1481,7 @@ const outChange = () => {
   $('outSatOut').textContent = `${$('outSat').value}%`;
   $('outGammaOut').textContent = gammaLabel(project.output.ledGamma);
   $('outBlackOut').textContent = `${$('outBlack').value}`;
+  project.output.maxColors = num('outColors', 0) || 0;
   markDirty();
   clearTimeout(outTimer);
   outTimer = setTimeout(() => { refreshExport(); renderPreview(); renderTimeline(); }, 120);
@@ -1488,6 +1490,7 @@ $('outBright').oninput = outChange;
 $('outSat').oninput = outChange;
 $('outGamma').oninput = outChange;
 $('outBlack').oninput = outChange;
+$('outColors').onchange = outChange;
 function gammaLabel(g) { return g <= 1.05 ? 'Off' : g < 1.8 ? `Light (${g.toFixed(1)})` : g <= 2.4 ? `Standard (${g.toFixed(1)})` : `Strong (${g.toFixed(1)})`; }
 $('expLoop').onchange = () => { project.loop = $('expLoop').checked; markDirty(); refreshExport(); };
 $('exportBtn').onclick = () => openDlg('exportDlg');
