@@ -65,21 +65,41 @@ export const FESTIVE_PAINT = {
   },
 
   snowman(ctx, t, i, el) {
+    // A wide, overlapping body with a big face, buttons and a hat, so it reads as a snowman even at
+    // curtain size: at 20 x 26 LEDs, separate round balls and dangling bits look like something else.
     ctx.save(); at(ctx, el, 10, 14);
-    ctx.translate(0, Math.sin(TAU * t * 2) * 1.5);
-    for (const [y, r] of [[30, 22], [0, 16], [-26, 12]]) {
-      ctx.fillStyle = radial(ctx, -r * 0.3, y - r * 0.3, r * 1.5, [[0, '#ffffff'], [0.7, '#e4ecff'], [1, '#9fb4ff']]);
-      glow(ctx, '#cfe0ff', 0.8); ctx.beginPath(); ctx.arc(0, y, r, 0, TAU); ctx.fill();
-    }
+    ctx.translate(0, Math.sin(TAU * t * 2) * 1.2);
+    const snow = (x, y, rx, ry) => {
+      ctx.fillStyle = radial(ctx, x - rx * 0.3, y - ry * 0.4, Math.max(rx, ry) * 1.5, [[0, '#ffffff'], [0.75, '#e4ecff'], [1, '#a8bcff']]);
+      ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, TAU); ctx.fill();
+    };
+    glow(ctx, '#cfe0ff', 0.6);
+    snow(0, 28, 28, 22);
+    snow(0, 4, 21, 17);
+    snow(0, -22, 17, 15);
     noGlow(ctx);
-    ctx.fillStyle = '#ff1a2a'; ctx.fillRect(-15, -16, 30, 6); ctx.fillRect(6, -14, 6, 16);
-    ctx.fillStyle = '#ff6a00'; ctx.beginPath(); ctx.moveTo(0, -26); ctx.lineTo(14, -23); ctx.lineTo(0, -21); ctx.fill();
-    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(-4, -30, 2, 0, TAU); ctx.arc(5, -30, 2, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#3a3a5a'; ctx.fillRect(-12, -40, 24, 4); ctx.fillRect(-8, -54, 16, 15);
-    ctx.fillStyle = '#ff1a2a'; ctx.fillRect(-8, -44, 16, 3);
-    ctx.strokeStyle = '#8a5a2a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-    const wave = Math.sin(TAU * t * 2) * 6;
-    ctx.beginPath(); ctx.moveTo(-15, -2); ctx.lineTo(-34, -16 + wave); ctx.moveTo(15, -2); ctx.lineTo(34, -12); ctx.stroke();
+    // Arms reach up and out, waving.
+    const wave = Math.sin(TAU * t * 2) * 5;
+    ctx.strokeStyle = '#b07a3a'; ctx.lineWidth = 3.5; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-19, 2); ctx.lineTo(-40, -14 + wave); ctx.moveTo(-33, -9 + wave * 0.7); ctx.lineTo(-38, -2 + wave * 0.7);
+    ctx.moveTo(19, 2); ctx.lineTo(40, -14 - wave); ctx.moveTo(33, -9 - wave * 0.7); ctx.lineTo(38, -2 - wave * 0.7);
+    ctx.stroke();
+    // Scarf round the neck only.
+    ctx.fillStyle = '#ff1a2a'; ctx.beginPath(); ctx.ellipse(0, -9, 17, 4.5, 0, 0, TAU); ctx.fill();
+    // Face: eyes, carrot nose pointing sideways, smile.
+    ctx.fillStyle = '#1a1a2a';
+    ctx.beginPath(); ctx.arc(-6, -26, 2.6, 0, TAU); ctx.arc(6, -26, 2.6, 0, TAU); ctx.fill();
+    for (const [x, y] of [[-7, -16], [-3.5, -14.5], [0, -14], [3.5, -14.5], [7, -16]]) { ctx.beginPath(); ctx.arc(x, y, 1.3, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = '#ff7a00'; ctx.beginPath(); ctx.moveTo(-1, -23); ctx.lineTo(13, -20); ctx.lineTo(-1, -18); ctx.fill();
+    // Coal buttons down the middle.
+    ctx.fillStyle = '#1a1a2a';
+    for (const y of [-1, 8, 22, 34]) { ctx.beginPath(); ctx.arc(0, y, 2.6, 0, TAU); ctx.fill(); }
+    // Top hat with a red band, edged so it shows against black.
+    ctx.fillStyle = '#2a2a44'; ctx.strokeStyle = '#8a8ab0'; ctx.lineWidth = 1.5;
+    ctx.fillRect(-17, -37, 34, 5); ctx.strokeRect(-17, -37, 34, 5);
+    ctx.fillRect(-11, -56, 22, 20); ctx.strokeRect(-11, -56, 22, 20);
+    ctx.fillStyle = '#ff1a2a'; ctx.fillRect(-11, -42, 22, 4);
     ctx.restore();
   },
 
