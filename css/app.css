@@ -339,6 +339,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
   background: #fff; color: #120d1c; padding: 9px 16px; border-radius: 999px; font-weight: 600; font-size: 13px;
   opacity: 0; pointer-events: none; transition: .2s; z-index: 60; max-width: calc(100vw - 32px); text-align: center;
 }
+.toast.error { border-radius: 14px; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.error { background: var(--bad); color: #fff; }
 

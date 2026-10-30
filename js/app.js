@@ -75,11 +75,15 @@ const cur = {
 let toastTimer;
 function toast(msg, error = false) {
   const t = $('toast');
+  // An open dialog sits in the browser's top layer, above everything else, so the message has to
+  // live inside the dialog to be seen.
+  const dlg = [...document.querySelectorAll('dialog[open]')].pop() || document.body;
+  if (t.parentElement !== dlg) dlg.appendChild(t);
   t.textContent = msg;
   t.classList.toggle('error', error);
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), error ? 4200 : 2200);
+  toastTimer = setTimeout(() => t.classList.remove('show'), error ? 7000 : 2600);
 }
 
 function guard(fn) {
