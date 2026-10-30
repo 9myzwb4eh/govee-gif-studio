@@ -11,7 +11,7 @@ import { drawPanel, fitCanvas, panelToCanvas } from './led.js';
 import { DEFAULT_FONT, layoutText } from './font.js';
 import * as fx from './effects.js';
 import { TEMPLATES } from './templates.js';
-import { readImageFile, toCels } from './importer.js';
+import { readImageFile, toCels, isVideoFile, openVideo } from './importer.js';
 import { panelFrames, ledFrames, analyse, combineFrames, formatBytes, safeName, download, share, canShareFiles, framePNG, buildGIF } from './exporter.js';
 import { sceneFromText, renderScene } from './scene.js';
 import { aiScene, chatPrompt, parseSceneReply, AI_MODELS, getKey, setKey } from './ai.js';
@@ -1392,22 +1392,78 @@ async function handleFile(file) {
     toast(`Opened "${project.name}".`);
     return;
   }
+  closePendingVideo();
+  const name = file.name || 'Pasted image';
+  if (isVideoFile(file)) {
+    toast('Opening video…');
+    const video = await openVideo(file);
+    pendingImport = { video, image: null, name };
+    const sel = $('impStart'); sel.textContent = '';
+    const step = video.duration > 30 ? 1 : 0.5;
+    for (let t = 0; t < Math.max(step, video.duration - 0.5) && sel.options.length < 120; t += step) sel.add(new Option(`${t.toFixed(1)} s`, t));
+    $('impVideo').hidden = false;
+    $('impTitle').textContent = 'Import video';
+    $('impFit').value = 'crop';
+    $('impLook').checked = true;
+    $('impDelays').checked = true;
+    openDlg('importDlg');
+    await extractVideo();
+    return;
+  }
   const image = await readImageFile(file);
-  pendingImport = { image, name: file.name || 'Pasted image' };
+  pendingImport = { image, name };
+  $('impVideo').hidden = true;
+  $('impTitle').textContent = 'Import image';
+  // Photos get the curtain look by default; drawn art (PNG, GIF) is usually made for the curtain already.
+  $('impLook').checked = /jpe?g|heic|webp/i.test(file.type || file.name || '');
   openDlg('importDlg');
   renderImportPreview();
 }
 
+function closePendingVideo() {
+  if (pendingImport?.video) pendingImport.video.close();
+}
+
+let extractRun = 0;
+async function extractVideo() {
+  const pi = pendingImport;
+  if (!pi?.video) return;
+  const run = ++extractRun;
+  const fps = +$('impFps').value, len = +$('impLen').value, start = +$('impStart').value || 0;
+  $('impGo').disabled = true;
+  try {
+    const image = await pi.video.frames(start, len, fps, (i, n) => { if (run === extractRun) $('impInfo').textContent = `Reading frames ${i} / ${n}…`; });
+    if (run !== extractRun || pendingImport !== pi) return;
+    pi.image = image;
+    renderImportPreview();
+  } finally { if (run === extractRun) $('impGo').disabled = false; }
+}
+
+let impAnim = null;
+function importOptions(extra = {}) {
+  return { fit: $('impFit').value, filter: $('impFilter').value, blackTransparent: $('impBlack').checked, focusX: num('impFocus', 50) / 100, curtainLook: $('impLook').checked, ...extra };
+}
+
 function renderImportPreview() {
-  if (!pendingImport) return;
+  clearTimeout(impAnim);
+  if (!pendingImport?.image) return;
   const { image, name } = pendingImport;
-  const cels = toCels({ ...image, frames: image.frames.slice(0, 1) }, { fit: $('impFit').value, filter: $('impFilter').value, blackTransparent: $('impBlack').checked });
-  const cel = cels[0].cel || newBuffer();
-  const rgb = Uint8ClampedArray.from(downscale(compositeLayersSingle(cel)));
+  // Preview up to 40 frames so long clips stay quick to adjust.
+  const every = Math.max(1, Math.ceil(image.frames.length / 40));
+  const sample = { ...image, frames: image.frames.filter((_, k) => k % every === 0) };
+  const frames = toCels(sample, importOptions()).map(({ cel, delay }) => ({ rgb: Uint8ClampedArray.from(downscale(compositeLayersSingle(cel || newBuffer()))), delay: delay * every }));
   const c = $('impPreview');
   fitCanvas(c, 80);
-  drawPanel(c, rgb, { mode: 'led' });
-  $('impInfo').textContent = `${name}: ${image.width} × ${image.height}, ${image.frames.length} frame${image.frames.length > 1 ? 's' : ''}`;
+  let i = 0;
+  const step = () => {
+    if (!$('importDlg').open) return;
+    const f = frames[i++ % frames.length];
+    drawPanel(c, f.rgb, { mode: 'led' });
+    if (frames.length > 1) impAnim = setTimeout(step, Math.max(20, f.delay || 100));
+  };
+  step();
+  const kind = pendingImport.video ? 'video clip' : `${image.width} × ${image.height}`;
+  $('impInfo').textContent = `${name}: ${kind}, ${image.frames.length} frame${image.frames.length > 1 ? 's' : ''}`;
 }
 
 function compositeLayersSingle(cel) {
@@ -1416,12 +1472,16 @@ function compositeLayersSingle(cel) {
   return out;
 }
 
-['impFit', 'impFilter', 'impBlack'].forEach((id) => $(id).addEventListener('change', renderImportPreview));
+['impFit', 'impFilter', 'impBlack', 'impLook'].forEach((id) => $(id).addEventListener('change', renderImportPreview));
+$('impFocus').addEventListener('input', renderImportPreview);
+['impStart', 'impLen', 'impFps'].forEach((id) => $(id).addEventListener('change', guard(extractVideo)));
+$('importDlg').addEventListener('close', () => { clearTimeout(impAnim); if (pendingImport?.video) { closePendingVideo(); pendingImport = null; } });
 
 $('impGo').onclick = guard(() => {
   if (!pendingImport) return;
   const { image, name } = pendingImport;
-  const cels = toCels(image, { fit: $('impFit').value, filter: $('impFilter').value, blackTransparent: $('impBlack').checked, maxFrames: 200 });
+  if (!image) return;
+  const cels = toCels(image, importOptions({ maxFrames: 200 }));
   const useDelays = $('impDelays').checked && image.frames.length > 1;
   const target = $('impTarget').value;
   if (target === 'newProject') {

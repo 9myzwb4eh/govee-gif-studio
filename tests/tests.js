@@ -9,6 +9,7 @@ import { layoutText } from '../js/font.js';
 import { sceneFromText, renderScene } from '../js/scene.js';
 import { panelFrames, ledFrames, analyse } from '../js/exporter.js';
 import { chatPrompt, parseSceneReply } from '../js/ai.js';
+import { curtainize } from '../js/importer.js';
 
 const results = [];
 const check = (name, ok, detail = '') => results.push({ name, ok: !!ok, detail });
@@ -157,6 +158,11 @@ check('"christmas tree" gives the tree and greeting, no extra pieces', ct.elemen
     renderScene(sc);
   }
   check('"Christmas" has 8 different versions that all render', seen.size === 8, [...seen].join(' | '));
+}
+{
+  const px = Uint8ClampedArray.from([30, 30, 34, 255, 230, 120, 40, 255]);
+  curtainize(px);
+  check('Curtain look turns murky darks off and keeps bright colour', px[0] + px[1] + px[2] === 0 && px[4] > 240 && px[6] < 40, `[${[...px.slice(0, 3)]}] [${[...px.slice(4, 7)]}]`);
 }
 const shapeScene = renderScene({ frames: 8, elements: [{ type: 'shape', shape: 'circle', r: 3, color: '#ff0000', keyframes: [{ t: 0, x: 4, y: 13 }, { t: 1, x: 16, y: 13 }] }] });
 const xs2 = shapeScene.frames.map((f) => { const L = shapeScene.layers[1].id; return f.cels[L] ? centroid(f.cels[L])[0] : 0; });

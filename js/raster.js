@@ -256,11 +256,12 @@ export function blurBuffer(src, w, h, radius) {
 }
 
 // Resize an RGBA image into a target buffer. filter: 'nearest' | 'box'. fit: 'stretch' | 'fit' | 'crop'.
-export function resizeInto(src, sw, sh, dw, dh, { filter = 'box', fit = 'fit' } = {}) {
+// focusX / focusY (0..1) choose which part of the source stays in view when cropping.
+export function resizeInto(src, sw, sh, dw, dh, { filter = 'box', fit = 'fit', focusX = 0.5, focusY = 0.5 } = {}) {
   let rx = dw / sw, ry = dh / sh;
   if (fit === 'fit') rx = ry = Math.min(rx, ry);
   else if (fit === 'crop') rx = ry = Math.max(rx, ry);
-  const ox = (dw - sw * rx) / 2, oy = (dh - sh * ry) / 2;
+  const ox = (dw - sw * rx) * focusX, oy = (dh - sh * ry) * focusY;
   const dst = new Uint8ClampedArray(dw * dh * 4);
   for (let y = 0; y < dh; y++) {
     for (let x = 0; x < dw; x++) {

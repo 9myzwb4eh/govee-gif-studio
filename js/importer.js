@@ -1,4 +1,4 @@
-// Reading PNG / JPG / GIF files (all GIF frames) into work-resolution cels.
+// Reading PNG / JPG / GIF files (all GIF frames) and video clips into work-resolution cels.
 
 import { decodeGIF } from './gif.js';
 import { resizeInto, WORK_W, WORK_H, isEmpty } from './raster.js';
@@ -37,10 +37,71 @@ export function knockOutBlack(buf, threshold = 12) {
   return buf;
 }
 
-export function toCels(image, { fit = 'fit', filter = 'box', blackTransparent = false, maxFrames = 200 } = {}) {
+export function toCels(image, { fit = 'fit', filter = 'box', blackTransparent = false, maxFrames = 200, focusX = 0.5, curtainLook = false } = {}) {
   return image.frames.slice(0, maxFrames).map((f) => {
-    const cel = resizeInto(f.rgba, image.width, image.height, WORK_W, WORK_H, { filter, fit });
+    const cel = resizeInto(f.rgba, image.width, image.height, WORK_W, WORK_H, { filter, fit, focusX });
+    if (curtainLook) curtainize(cel);
     if (blackTransparent) knockOutBlack(cel);
     return { cel: isEmpty(cel) ? null : cel, delay: f.delay };
   });
+}
+
+// Photos and video are made for screens: murky backgrounds light the whole curtain and mid-tones look
+// washed out. This pushes dim areas to black (LEDs off), adds contrast and saturates the colours.
+export function curtainize(buf, { black = 0.16, contrast = 1.2, saturation = 1.45 } = {}) {
+  const lut = new Uint8ClampedArray(256);
+  for (let v = 0; v < 256; v++) {
+    let x = Math.max(0, (v / 255 - black) / (1 - black));
+    x = 0.5 + (x - 0.5) * contrast;
+    lut[v] = Math.round(Math.max(0, Math.min(1, x)) * 255);
+  }
+  for (let p = 0; p < buf.length; p += 4) {
+    let r = lut[buf[p]], g = lut[buf[p + 1]], b = lut[buf[p + 2]];
+    const l = 0.299 * r + 0.587 * g + 0.114 * b;
+    buf[p] = l + (r - l) * saturation; buf[p + 1] = l + (g - l) * saturation; buf[p + 2] = l + (b - l) * saturation;
+  }
+  return buf;
+}
+
+export function isVideoFile(file) {
+  return /^video\//.test(file.type) || /\.(mp4|mov|m4v|webm)$/i.test(file.name || '');
+}
+
+// Opens a video so frames can be pulled from it. Call .frames(start, length, fps) for
+// { width, height, frames: [{ rgba, delay }] } and .close() when done.
+export async function openVideo(file) {
+  const url = URL.createObjectURL(file);
+  const v = document.createElement('video');
+  v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = url;
+  await new Promise((resolve, reject) => {
+    v.onloadeddata = resolve;
+    v.onerror = () => reject(new Error("Couldn't open that video. Try a .mp4 or .mov clip."));
+    v.load();
+  });
+  // Frames are pulled at a modest size: the curtain is 20 x 26, so more pixels only cost memory.
+  const k = Math.min(1, 320 / Math.max(v.videoWidth, v.videoHeight));
+  const w = Math.max(1, Math.round(v.videoWidth * k)), h = Math.max(1, Math.round(v.videoHeight * k));
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  const seek = (t) => new Promise((resolve) => {
+    const done = () => { v.removeEventListener('seeked', done); resolve(); };
+    v.addEventListener('seeked', done);
+    v.currentTime = t;
+    setTimeout(done, 1500); // some browsers skip the event when the time doesn't change
+  });
+  return {
+    duration: v.duration || 0, width: w, height: h,
+    async frames(start = 0, length = 3, fps = 12, onProgress) {
+      const n = Math.max(1, Math.min(100, Math.round(length * fps)));
+      const end = Math.max(0, (v.duration || length) - 0.05), out = [];
+      for (let i = 0; i < n; i++) {
+        await seek(Math.min(end, start + i / fps));
+        ctx.drawImage(v, 0, 0, w, h);
+        out.push({ rgba: ctx.getImageData(0, 0, w, h).data, delay: Math.round(1000 / fps) });
+        onProgress?.(i + 1, n);
+      }
+      return { width: w, height: h, frames: out };
+    },
+    close() { v.removeAttribute('src'); v.load(); URL.revokeObjectURL(url); },
+  };
 }

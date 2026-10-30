@@ -212,7 +212,7 @@
   </nav>
 </div>
 
-<input type="file" id="fileInput" accept="image/png,image/jpeg,image/gif,.json,application/json" hidden>
+<input type="file" id="fileInput" accept="image/png,image/jpeg,image/gif,video/*,.mp4,.mov,.m4v,.json,application/json" hidden>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- Recover -->
@@ -380,16 +380,23 @@
 
 <!-- Import -->
 <dialog id="importDlg" class="dlg">
-  <form method="dialog" class="dlg-head"><h2>Import image</h2><button class="x" aria-label="Close">×</button></form>
+  <form method="dialog" class="dlg-head"><h2 id="impTitle">Import image</h2><button class="x" aria-label="Close">×</button></form>
   <div class="import-preview"><canvas id="impPreview"></canvas><span id="impInfo"></span></div>
+  <div class="grid2" id="impVideo" hidden>
+    <label>Start at <select id="impStart"></select></label>
+    <label>Length <select id="impLen"><option value="1">1 s</option><option value="2">2 s</option><option value="3" selected>3 s</option><option value="4">4 s</option><option value="5">5 s</option><option value="6">6 s</option></select></label>
+    <label>Smoothness <select id="impFps"><option value="8">8 frames/s</option><option value="12" selected>12 frames/s</option><option value="15">15 frames/s</option><option value="20">20 frames/s</option></select></label>
+  </div>
   <div class="grid2">
     <label>Fit <select id="impFit"><option value="fit">Fit (pad)</option><option value="crop">Crop to fill</option><option value="stretch">Stretch</option></select></label>
     <label>Resize <select id="impFilter"><option value="box">Smooth (box average)</option><option value="nearest">Sharp (nearest)</option></select></label>
     <label>Into <select id="impTarget"><option value="newLayer">New layer</option><option value="layer">Current layer</option><option value="newProject">New project</option></select></label>
+    <label>Crop position <input type="range" id="impFocus" min="0" max="100" value="50"></label>
+    <label class="check"><input type="checkbox" id="impLook" checked> Curtain look (deep blacks, rich colour)</label>
     <label class="check"><input type="checkbox" id="impBlack"> Make black transparent</label>
-    <label class="check"><input type="checkbox" id="impDelays" checked> Use the GIF's frame timing</label>
+    <label class="check"><input type="checkbox" id="impDelays" checked> Use the clip's frame timing</label>
   </div>
-  <p class="hint">Animated GIFs import every frame, starting at the current frame. Tip: you can also paste an image with Ctrl/⌘+V.</p>
+  <p class="hint">Videos and animated GIFs import every frame, starting at the current frame. Short clips with one clear subject on a dark background look best. Tip: you can also paste an image with Ctrl/⌘+V.</p>
   <div class="row-btns end"><button class="btn primary" id="impGo">Import</button></div>
 </dialog>
 
@@ -509,6 +516,7 @@
         <li>Use 60–100 ms per frame for smooth motion and <b>Hold</b> for pauses.</li>
         <li>Put backgrounds on their own layer. Add glow on an <b>Add</b> layer above anything that should shine.</li>
         <li>Onion skin (U) shows neighbouring frames while you draw.</li>
+              <li>The fastest route to pro-looking results: <b>Import</b> a short video or GIF (a Christmas clip, an animated sticker, or an animation made with an AI video app). Pick 2–4 seconds with one clear subject, use <b>Crop position</b> to frame it, and keep <b>Curtain look</b> on.</li>
       </ul>
     </section>
     <section>
