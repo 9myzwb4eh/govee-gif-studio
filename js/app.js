@@ -1062,7 +1062,14 @@ function openDlg(id) {
 }
 
 document.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => openDlg(b.dataset.open)));
-document.querySelectorAll('dialog').forEach((d) => d.addEventListener('click', (e) => { if (e.target === d) d.close(); }));
+// Tapping outside a dialog closes it, but only when the tap started outside too: selecting text and
+// releasing past the edge must not close it. The Create dialog closes only with its × button.
+document.querySelectorAll('dialog').forEach((d) => {
+  if (d.id === 'createDlg') return;
+  let downOutside = false;
+  d.addEventListener('pointerdown', (e) => { downOutside = e.target === d; });
+  d.addEventListener('click', (e) => { if (e.target === d && downOutside) d.close(); downOutside = false; });
+});
 
 // Templates
 let tplAnim = null;

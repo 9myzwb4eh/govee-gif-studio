@@ -138,6 +138,17 @@ check('"christmas tree" gives the tree and greeting, no extra pieces', ct.elemen
   let bad = ''; try { parseSceneReply('Sorry, I cannot help'); } catch (e) { bad = e.message; }
   check('Chat prompt and pasted reply round trip', cp.includes('a dragon breathing fire') && cp.includes('"elements"') && sc.name === 'Dragon' && renderScene(sc).frames.length === 24 && bad.length > 0, `prompt ${cp.length} chars; error "${bad.slice(0, 40)}…"`);
 }
+{
+  const variants = {
+    'curly quotes': '{\u201cname\u201d:\u201cX\u201d,\u201celements\u201d:[{\u201ctype\u201d:\u201cfire\u201d}]}',
+    'comments and trailing commas': '{"name":"X", // the name\n "elements":[{"type":"fire",},], /* done */}',
+    'bare keys and single quotes': "{name:'X', elements:[{type:'snow', color:'#ffffff'}]}",
+    'prose with braces around it': 'Sure! I used {x,y} coordinates.\n```json\n{"name":"X","elements":[{"type":"stars"}]}\n```\nTweak {anything} you like.',
+    'cut off mid-reply': '```json\n{"name":"X","frames":24,"elements":[{"type":"fire"},{"type":"text","text":"HI","col',
+  };
+  const fails = Object.entries(variants).filter(([, v]) => { try { return !parseSceneReply(v).elements.length; } catch (e) { return true; } }).map(([k]) => k);
+  check('Pasted replies are repaired (quotes, comments, commas, bare keys, prose, cut off)', !fails.length, fails.join(', ') || `${Object.keys(variants).length} variants read`);
+}
 const shapeScene = renderScene({ frames: 8, elements: [{ type: 'shape', shape: 'circle', r: 3, color: '#ff0000', keyframes: [{ t: 0, x: 4, y: 13 }, { t: 1, x: 16, y: 13 }] }] });
 const xs2 = shapeScene.frames.map((f) => { const L = shapeScene.layers[1].id; return f.cels[L] ? centroid(f.cels[L])[0] : 0; });
 check('AI shape keyframes move smoothly', xs2.every((x, i) => !i || x > xs2[i - 1]), xs2.map((x) => (x / 5).toFixed(1)).join(' → '));

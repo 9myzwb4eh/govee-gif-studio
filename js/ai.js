@@ -134,21 +134,73 @@ export async function aiScene(prompt, { apiKey, model = AI_MODELS[0].id, signal 
 export function chatPrompt(description) {
   return `${SYSTEM}
 
-Reply with only the scene as one JSON object, with no explanation before or after it. It must follow this JSON Schema:
+Reply with only the scene as one compact JSON object inside a single \`\`\`json code block, with no explanation before or after it. Use plain numbers (no math or comments). It must follow this JSON Schema:
 ${JSON.stringify(SCHEMA)}
 
 Make this animation: ${description}`;
 }
 
-// Pulls the scene out of a chat reply, which may wrap it in a code block or add a sentence around it.
+// Pulls the scene out of a chat reply. Chat apps add code fences and sentences, phones turn quotes
+// curly, and models sometimes write JavaScript-style JSON (comments, trailing commas, bare keys) or
+// get cut off, so this repairs what it can before giving up.
 export function parseSceneReply(text) {
-  const src = String(text || '').replace(/```(?:json)?/gi, '');
-  const a = src.indexOf('{'), b = src.lastIndexOf('}');
-  if (a < 0 || b <= a) throw new Error("That reply doesn't contain a scene. Copy the AI's whole answer, including the { } part.");
-  let scene;
-  try { scene = JSON.parse(src.slice(a, b + 1)); } catch {
-    throw new Error("The scene in that reply is incomplete or garbled. Ask the AI to \"reply with only the JSON\" and paste again.");
+  const src = String(text || '')
+    .replace(/[“”„‟″]/g, '"').replace(/[‘’‚‛′]/g, "'")
+    .replace(/ /g, ' ').replace(/```[a-z]*\s*/gi, '');
+  const starts = [];
+  for (let i = 0; i < src.length; i++) if (src[i] === '{') starts.push(i);
+  if (!starts.length) throw new Error("That reply doesn't contain a scene. Copy the AI's whole answer, including the { } part.");
+  // Try the outermost object first, then any inner one that holds the elements.
+  let lastErr = null;
+  for (const st of starts) {
+    const chunk = balanced(src, st);
+    if (!/"?elements"?\s*:/.test(chunk)) continue;
+    try {
+      const scene = JSON.parse(repair(chunk));
+      if (scene && Array.isArray(scene.elements)) return scene;
+    } catch (e) { lastErr = e; }
   }
-  if (!scene || !Array.isArray(scene.elements)) throw new Error("That reply isn't a scene. Make sure you pasted the answer to the copied prompt.");
-  return scene;
+  if (!lastErr) throw new Error("That reply isn't a scene. Make sure you pasted the answer to the copied prompt.");
+  throw new Error(`Couldn't read the scene in that reply (${lastErr.message}). Ask the AI to "reply with only the JSON code block" and paste again.`);
+}
+
+// From an opening brace to its matching close, skipping braces inside strings. A reply that was cut
+// off gets its open strings, arrays and objects closed.
+function balanced(src, start) {
+  const stack = [];
+  let inStr = null, esc = false;
+  for (let i = start; i < src.length; i++) {
+    const c = src[i];
+    if (inStr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === inStr) inStr = null; continue; }
+    if (c === '"' || c === "'") inStr = c;
+    else if (c === '{' || c === '[') stack.push(c === '{' ? '}' : ']');
+    else if (c === '}' || c === ']') { stack.pop(); if (!stack.length) return src.slice(start, i + 1); }
+  }
+  let out = src.slice(start);
+  if (inStr) out += inStr;
+  out = out.replace(/,\s*("[^"]*"\s*:?\s*)?$/, '').replace(/:\s*$/, ': null');
+  return out + stack.reverse().join('');
+}
+
+function repair(s) {
+  let out = '', inStr = null, esc = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inStr) {
+      if (esc) { esc = false; out += c; continue; }
+      if (c === '\\') { esc = true; out += c; continue; }
+      if (c === inStr) { inStr = null; out += '"'; continue; }
+      if (c === '"') { out += '\\"'; continue; }
+      if (c === '\n') { out += '\\n'; continue; }
+      out += c; continue;
+    }
+    if (c === '"' || c === "'") { inStr = c; out += '"'; continue; }
+    if (c === '/' && s[i + 1] === '/') { while (i < s.length && s[i] !== '\n') i++; continue; }
+    if (c === '/' && s[i + 1] === '*') { i = s.indexOf('*/', i + 2); if (i < 0) break; i++; continue; }
+    out += c;
+  }
+  return out
+    .replace(/([{,]\s*)([A-Za-z_][\w]*)\s*:/g, '$1"$2":')
+    .replace(/,(\s*[}\]])/g, '$1')
+    .replace(/\b(NaN|Infinity|-Infinity|undefined)\b/g, 'null');
 }
