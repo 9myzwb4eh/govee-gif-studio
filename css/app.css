@@ -294,7 +294,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 .led-tune summary { cursor: pointer; color: var(--muted); font-weight: 600; font-size: 13px; padding: 4px 0; }
 .exp-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 
-#crPrompt { width: 100%; background: var(--bg); border: 1px solid var(--line2); border-radius: 10px; padding: 10px 12px; color: var(--text); font: inherit; resize: vertical; margin-top: 6px; }
+#crPrompt, #crReply { width: 100%; background: var(--bg); border: 1px solid var(--line2); border-radius: 10px; padding: 10px 12px; color: var(--text); font: inherit; resize: vertical; margin-top: 6px; }
 .cr-examples { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .cr-examples button { border: 1px solid var(--line2); background: var(--card2); color: var(--muted); border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
 .cr-examples button:hover { color: var(--text); border-color: var(--accent); }
@@ -429,3 +429,4 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
   .top-actions .btn:not(.icon-only):not(.primary) { width: 32px; }
   .palette { grid-template-columns: repeat(4, 1fr); }
 }
+#crReply { font-size: 13px; margin: 4px 0 8px; }

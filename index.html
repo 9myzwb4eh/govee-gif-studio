@@ -245,11 +245,25 @@
         <button class="btn primary" id="crBuild"><svg><use href="#i-bolt"/></svg>Build</button>
         <button class="btn" id="crAi"><svg><use href="#i-sparkle"/></svg>Build with AI</button>
       </div>
-      <p class="hint" id="crHelp">Build is instant and free. It knows: pumpkin, ghost, bats, spider, witch, moon, stars, lightning, rain, snow, fire, eyes, skull, heart, colors, counts, slow/fast, and quoted text. Build with AI can draw anything, using your own Claude API key.</p>
+      <p class="hint" id="crHelp">Build is instant and free. It knows festivals (Christmas, Diwali, New Year, Eid, Easter, Hanukkah, Holi, birthdays…), about 35 pieces like tree, fireworks, diya, lantern, pumpkin and ghost, plus colors, counts, slow/fast and quoted text. For anything else, use your AI chat below (free with your subscription), or Build with AI using a Claude API key.</p>
       <div class="cr-understood" id="crUnderstood"></div>
       <div class="row-btns"><button class="btn primary" id="crUse" disabled>Open in editor</button></div>
+      <details class="led-tune" id="crChat">
+        <summary>Use your AI chat (Claude, ChatGPT, Gemini…)</summary>
+        <p class="hint">Free with the chat app or subscription you already have, no API key needed.</p>
+        <p class="hint"><b>1.</b> Describe the animation above, then copy the prompt and paste it into a new chat.</p>
+        <div class="row-btns">
+          <button class="btn" id="crCopy">Copy prompt</button>
+          <a class="btn tiny ghost" href="https://claude.ai/new" target="_blank" rel="noopener">Claude</a>
+          <a class="btn tiny ghost" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT</a>
+          <a class="btn tiny ghost" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini</a>
+        </div>
+        <p class="hint"><b>2.</b> Copy the whole reply and paste it here.</p>
+        <textarea id="crReply" rows="3" placeholder="Paste the AI's reply here"></textarea>
+        <div class="row-btns"><button class="btn primary" id="crFromReply">Build from reply</button></div>
+      </details>
       <details class="led-tune" id="crAiSettings">
-        <summary>AI settings</summary>
+        <summary>Build with AI settings (Claude API key)</summary>
         <div class="grid2">
           <label>Anthropic API key <input type="password" id="crKey" placeholder="sk-ant-..." autocomplete="off"></label>
           <label>Model <select id="crModel"></select></label>

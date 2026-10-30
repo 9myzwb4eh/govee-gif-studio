@@ -126,11 +126,29 @@ export async function aiScene(prompt, { apiKey, model = AI_MODELS[0].id, signal 
   if (data.stop_reason === 'refusal') throw new Error('Claude declined this request. Try describing it differently.');
   if (data.stop_reason === 'max_tokens') throw new Error('The answer was cut off. Try a simpler description.');
   const text = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
+  return { scene: parseSceneReply(text), usage: data.usage };
+}
+
+// No API key needed: a prompt to paste into any AI chat (Claude, ChatGPT, Gemini...) that has the
+// chat answer with a scene, which the person pastes back.
+export function chatPrompt(description) {
+  return `${SYSTEM}
+
+Reply with only the scene as one JSON object, with no explanation before or after it. It must follow this JSON Schema:
+${JSON.stringify(SCHEMA)}
+
+Make this animation: ${description}`;
+}
+
+// Pulls the scene out of a chat reply, which may wrap it in a code block or add a sentence around it.
+export function parseSceneReply(text) {
+  const src = String(text || '').replace(/```(?:json)?/gi, '');
+  const a = src.indexOf('{'), b = src.lastIndexOf('}');
+  if (a < 0 || b <= a) throw new Error("That reply doesn't contain a scene. Copy the AI's whole answer, including the { } part.");
   let scene;
-  try { scene = JSON.parse(text); } catch {
-    const m = text.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error('Claude did not return a scene. Try again.');
-    scene = JSON.parse(m[0]);
+  try { scene = JSON.parse(src.slice(a, b + 1)); } catch {
+    throw new Error("The scene in that reply is incomplete or garbled. Ask the AI to \"reply with only the JSON\" and paste again.");
   }
-  return { scene, usage: data.usage };
+  if (!scene || !Array.isArray(scene.elements)) throw new Error("That reply isn't a scene. Make sure you pasted the answer to the copied prompt.");
+  return scene;
 }

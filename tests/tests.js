@@ -8,6 +8,7 @@ import { TEMPLATES } from '../js/templates.js';
 import { layoutText } from '../js/font.js';
 import { sceneFromText, renderScene } from '../js/scene.js';
 import { panelFrames, ledFrames, analyse } from '../js/exporter.js';
+import { chatPrompt, parseSceneReply } from '../js/ai.js';
 
 const results = [];
 const check = (name, ok, detail = '') => results.push({ name, ok: !!ok, detail });
@@ -129,6 +130,13 @@ check('"christmas tree" gives the tree and greeting, no extra pieces', ct.elemen
   const small = ledFrames(xp), smallSize = analyse(small).size;
   const used = new Set(); for (const f of small) for (let i = 0; i < f.rgb.length; i += 3) used.add((f.rgb[i] << 16) | (f.rgb[i + 1] << 8) | f.rgb[i + 2]);
   check('16-color export shrinks the GIF and keeps black exact', used.size <= 16 && used.has(0) && smallSize < full * 0.8, `${(full / 1024).toFixed(1)} KB → ${(smallSize / 1024).toFixed(1)} KB, ${used.size} colors`);
+}
+{
+  const cp = chatPrompt('a dragon breathing fire');
+  const reply = 'Here is your scene:\n```json\n{"name":"Dragon","frames":24,"frameMs":70,"background":{"top":"#000000","bottom":"#000000"},"elements":[{"type":"fire"},{"type":"text","text":"HI","color":"#ff6a00"}]}\n```\nEnjoy!';
+  const sc = parseSceneReply(reply);
+  let bad = ''; try { parseSceneReply('Sorry, I cannot help'); } catch (e) { bad = e.message; }
+  check('Chat prompt and pasted reply round trip', cp.includes('a dragon breathing fire') && cp.includes('"elements"') && sc.name === 'Dragon' && renderScene(sc).frames.length === 24 && bad.length > 0, `prompt ${cp.length} chars; error "${bad.slice(0, 40)}…"`);
 }
 const shapeScene = renderScene({ frames: 8, elements: [{ type: 'shape', shape: 'circle', r: 3, color: '#ff0000', keyframes: [{ t: 0, x: 4, y: 13 }, { t: 1, x: 16, y: 13 }] }] });
 const xs2 = shapeScene.frames.map((f) => { const L = shapeScene.layers[1].id; return f.cels[L] ? centroid(f.cels[L])[0] : 0; });

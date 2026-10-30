@@ -14,7 +14,7 @@ import { TEMPLATES } from './templates.js';
 import { readImageFile, toCels } from './importer.js';
 import { panelFrames, ledFrames, analyse, combineFrames, formatBytes, safeName, download, share, canShareFiles, framePNG, buildGIF } from './exporter.js';
 import { sceneFromText, renderScene } from './scene.js';
-import { aiScene, AI_MODELS, getKey, setKey } from './ai.js';
+import { aiScene, chatPrompt, parseSceneReply, AI_MODELS, getKey, setKey } from './ai.js';
 import { saveAutosave, loadAutosave, saveToLibrary, listLibrary, deleteFromLibrary, getPref, setPref } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
@@ -1204,6 +1204,29 @@ $('crAi').onclick = guard(async () => {
     btn.lastChild.textContent = 'Build with AI';
   }
 });
+
+$('crCopy').onclick = guard(async () => {
+  const text = $('crPrompt').value.trim();
+  if (!text) { toast('Describe the animation first, then copy the prompt.'); $('crPrompt').focus(); return; }
+  const prompt = chatPrompt(text);
+  try { await navigator.clipboard.writeText(prompt); } catch {
+    // Older browsers: copy through a hidden text box.
+    const ta = document.createElement('textarea'); ta.value = prompt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+  }
+  toast('Prompt copied. Paste it into a new chat, then paste the reply back here.');
+});
+
+const crFromReply = guard(() => {
+  const reply = $('crReply').value.trim();
+  if (!reply) { toast("Paste the AI's reply first."); return; }
+  const scene = parseSceneReply(reply);
+  const p = renderScene(scene);
+  const kinds = [...new Set((scene.elements || []).map((e) => (e.type === 'text' ? `text "${e.text}"` : e.type)))];
+  showCreated(p, kinds, `From your AI chat · ${p.frames.length} frames`);
+});
+$('crFromReply').onclick = crFromReply;
+$('crReply').addEventListener('paste', () => setTimeout(() => { if ($('crReply').value.includes('}')) crFromReply(); }, 50));
 
 $('crUse').onclick = () => {
   if (!crProject) return;
