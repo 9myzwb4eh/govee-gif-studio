@@ -414,13 +414,13 @@
   <label class="check"><input type="checkbox" id="expLoop" checked> Loop forever</label>
   <div class="exp-actions">
     <button class="btn primary" id="expGif"><svg><use href="#i-export"/></svg>Download GIF</button>
-    <button class="btn" id="expShare" hidden>Share / Save to Files</button>
+    <button class="btn" id="expShare" hidden>Share / Save Image</button>
     <button class="btn ghost" id="expPng">PNG of this frame (20 × 26)</button>
     <button class="btn ghost" id="expPngBig">Preview PNG (12×)</button>
     <button class="btn ghost" id="expJson">Project file (.json)</button>
     <button class="btn ghost" data-open="combineDlg">Combine projects…</button>
   </div>
-  <p class="hint">On iPhone, use <b>Share / Save to Files</b> and save into Files. In Govee Home, open the curtain, go to <b>DIY</b>, and pick the GIF from <b>Files</b>, not Photos (Photos turns GIFs into still images).</p>
+  <p class="hint">On iPhone, tap <b>Share / Save Image</b>, then <b>Save Image</b> to put the GIF in Photos (it shows up in the <b>Animated</b> album). In Govee Home, open the curtain, go to <b>DIY</b>, and pick it from Photos.</p>
 </dialog>
 
 <!-- Combine -->
@@ -436,7 +436,7 @@
   </div>
   <div class="exp-stats compact" id="combineStats"></div>
   <ul class="warnings" id="combineWarn"></ul>
-  <div class="row-btns end"><button class="btn primary" id="combineGo">Download combined GIF</button><button class="btn" id="combineShare" hidden>Share / Save to Files</button></div>
+  <div class="row-btns end"><button class="btn primary" id="combineGo">Download combined GIF</button><button class="btn" id="combineShare" hidden>Share / Save Image</button></div>
   <input type="file" id="combineFile" accept=".json,application/json" multiple hidden>
 </dialog>
 
@@ -491,9 +491,9 @@
       <h3>Export and upload</h3>
       <ol>
         <li>Press <b>Export</b> and check the size and frame count. Over 100 frames or 500 KB shows a warning. Govee does not publish exact limits, so these are safe guidelines.</li>
-        <li>On iPhone, tap <b>Share / Save to Files</b> → <b>Save to Files</b>. On a computer, <b>Download GIF</b> and move it to your phone (AirDrop or iCloud Drive).</li>
+        <li>On iPhone, tap <b>Share / Save Image</b> → <b>Save Image</b>. On a computer, <b>Download GIF</b> and move it to your phone (AirDrop or iCloud Drive).</li>
         <li>In Govee Home, open your Curtain Lights 2, go to <b>DIY</b>, create a new design, and choose to upload a GIF.</li>
-        <li>Pick the file from <b>Files</b>, not Photos. Photos can turn GIFs into still images.</li>
+        <li>Pick the GIF from Photos (the <b>Animated</b> album).</li>
       </ol>
       <p>Save the <b>Project file</b> too, so you can reopen and edit later.</p>
     </section>
