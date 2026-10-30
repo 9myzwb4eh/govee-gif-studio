@@ -379,6 +379,14 @@
 </dialog>
 
 <!-- Import -->
+<dialog id="importSrcDlg" class="dlg">
+  <form method="dialog" class="dlg-head"><h2>Import</h2><button class="x" aria-label="Close">×</button></form>
+  <div class="row-btns"><button class="btn primary" id="srcFile">Choose a photo, video or GIF</button></div>
+  <p class="hint">Or paste a link to a video or GIF file:</p>
+  <input type="url" id="srcUrl" placeholder="https://… .mp4, .gif or a Giphy link" autocomplete="off">
+  <div class="row-btns"><button class="btn" id="srcGo">Get clip</button></div>
+  <p class="hint">Direct links to .mp4, .mov, .webm, .gif, .png or .jpg files work when the site allows it, and so do Giphy links. YouTube, TikTok and Instagram don't allow it: save the clip to Photos first (or screen-record it), then choose it above.</p>
+</dialog>
 <dialog id="importDlg" class="dlg">
   <form method="dialog" class="dlg-head"><h2 id="impTitle">Import image</h2><button class="x" aria-label="Close">×</button></form>
   <div class="import-preview"><canvas id="impPreview"></canvas><span id="impInfo"></span></div>

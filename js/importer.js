@@ -63,6 +63,31 @@ export function curtainize(buf, { black = 0.16, contrast = 1.2, saturation = 1.4
   return buf;
 }
 
+// Downloads a clip from a link. Only works for direct file links on sites that allow other apps to
+// fetch them (CORS); page links from video sites are refused with a clear explanation.
+export async function fetchClip(input) {
+  let url;
+  try { url = new URL(String(input).trim()); } catch { throw new Error('That doesn\'t look like a link. Paste the full address starting with https://'); }
+  const host = url.hostname.replace(/^www\./, '');
+  if (/(^|\.)(youtube\.com|youtu\.be|tiktok\.com|instagram\.com|facebook\.com|x\.com|twitter\.com|pinterest\.)/.test(host)) {
+    throw new Error(`${host} doesn't let apps download its videos. Save or screen-record the clip to Photos, then choose it with the button above.`);
+  }
+  // Giphy page links point at a web page; the clip itself lives at a predictable media address.
+  const giphy = host.endsWith('giphy.com') && url.pathname.match(/\/(?:gifs|stickers|clips)\/(?:.*-)?([A-Za-z0-9]+)\/?$/);
+  if (giphy) url = new URL(`https://media.giphy.com/media/${giphy[1]}/giphy.mp4`);
+  let res;
+  try { res = await fetch(url.href, { mode: 'cors' }); } catch {
+    throw new Error('That site doesn\'t allow apps to download its files. Save the clip to Photos (long-press it, then Save), then choose it with the button above.');
+  }
+  if (!res.ok) throw new Error(`The link didn't work (error ${res.status}). Check it opens in Safari.`);
+  const blob = await res.blob();
+  if (blob.size > 60 * 1024 * 1024) throw new Error('That file is over 60 MB. Pick a shorter clip.');
+  const type = blob.type || '';
+  if (/text\/html/.test(type)) throw new Error('That link is a web page, not a video or image file. Open it, long-press the clip and copy its own address, or save it to Photos.');
+  const name = decodeURIComponent(url.pathname.split('/').pop() || 'clip') || 'clip';
+  return new File([blob], name, { type });
+}
+
 export function isVideoFile(file) {
   return /^video\//.test(file.type) || /\.(mp4|mov|m4v|webm)$/i.test(file.name || '');
 }

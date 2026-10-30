@@ -11,7 +11,7 @@ import { drawPanel, fitCanvas, panelToCanvas } from './led.js';
 import { DEFAULT_FONT, layoutText } from './font.js';
 import * as fx from './effects.js';
 import { TEMPLATES } from './templates.js';
-import { readImageFile, toCels, isVideoFile, openVideo } from './importer.js';
+import { readImageFile, toCels, isVideoFile, openVideo, fetchClip } from './importer.js';
 import { panelFrames, ledFrames, analyse, combineFrames, formatBytes, safeName, download, share, canShareFiles, framePNG, buildGIF } from './exporter.js';
 import { sceneFromText, renderScene } from './scene.js';
 import { aiScene, chatPrompt, parseSceneReply, AI_MODELS, getKey, setKey } from './ai.js';
@@ -1377,7 +1377,19 @@ $('fontReset').onclick = () => { checkpoint(); project.font = JSON.parse(JSON.st
 
 // Import
 let pendingImport = null;
-$('importBtn').onclick = () => $('fileInput').click();
+$('importBtn').onclick = () => openDlg('importSrcDlg');
+$('srcFile').onclick = () => { $('importSrcDlg').close(); $('fileInput').click(); };
+$('srcGo').onclick = guard(async () => {
+  const link = $('srcUrl').value.trim();
+  if (!link) { toast('Paste a link first.'); return; }
+  $('srcGo').disabled = true; $('srcGo').textContent = 'Downloading…';
+  try {
+    const file = await fetchClip(link);
+    $('importSrcDlg').close();
+    await handleFile(file);
+  } finally { $('srcGo').disabled = false; $('srcGo').textContent = 'Get clip'; }
+});
+$('srcUrl').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('srcGo').click(); } });
 $('fileInput').onchange = guard(async (e) => {
   const file = e.target.files[0];
   e.target.value = '';
