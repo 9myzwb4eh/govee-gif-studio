@@ -41,10 +41,15 @@ function glowOn(ctx, color, amount) {
 const PAINT = {
   moon(ctx, t, i, el) {
     const x = (el.x ?? 13) * S, y = (el.y ?? 7) * S, r = (el.r ?? 4.5) * S, c = el.color || '#ffe9a8';
-    ctx.fillStyle = radial(ctx, x, y, r * 2.4, [[0, hexA(c, 0.45)], [1, hexA(c, 0)]]);
+    ctx.fillStyle = radial(ctx, x, y, r * (2.3 + 0.15 * Math.sin(TAU * t)), [[0, hexA(c, 0.45)], [1, hexA(c, 0)]]);
     ctx.fillRect(0, 0, 100, 130);
     ctx.fillStyle = radial(ctx, x - r * 0.3, y - r * 0.3, r * 1.4, [[0, '#ffffff'], [0.5, c], [1, c]]);
     ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+    // Craters give it a surface instead of a flat disc.
+    ctx.fillStyle = 'rgba(150,120,70,0.35)';
+    for (const [dx, dy, cr] of [[-0.35, -0.1, 0.22], [0.3, 0.3, 0.17], [0.15, -0.4, 0.12], [-0.1, 0.45, 0.1]]) {
+      ctx.beginPath(); ctx.arc(x + dx * r, y + dy * r, cr * r, 0, TAU); ctx.fill();
+    }
   },
 
   pumpkin(ctx, t, i, el) {
@@ -164,10 +169,15 @@ const PAINT = {
   },
 
   snow(ctx, t, i, el) {
-    ctx.fillStyle = el.color || '#ffffff';
-    for (let k = 0; k < 26; k++) {
-      const y = (((k * 47) % 130) + t * 130) % 140 - 5, x = ((k * 29) % 100) + Math.sin(TAU * (t * 2 + k * 0.3)) * 4;
-      ctx.beginPath(); ctx.arc(x, y, 1.8 + (k % 3) * 0.6, 0, TAU); ctx.fill();
+    // Two depths: small dim flakes drift slowly behind, bigger bright ones fall faster in front.
+    const c = el.color || '#ffffff';
+    for (const [n, speed, size, alpha, seed] of [[18, 1, 1.4, 0.45, 47], [11, 2, 2.4, 1, 29]]) {
+      ctx.fillStyle = hexA(c, alpha);
+      if (alpha === 1) glowOn(ctx, c, 0.6);
+      for (let k = 0; k < n; k++) {
+        const y = (((k * seed) % 130) + t * 140 * speed) % 140 - 5, x = ((k * (seed + 12)) % 100) + Math.sin(TAU * (t * speed + k * 0.37)) * (3 + size);
+        ctx.beginPath(); ctx.arc(x, y, size + (k % 3) * 0.4, 0, TAU); ctx.fill();
+      }
     }
   },
 
@@ -226,6 +236,14 @@ const PAINT = {
     ctx.fillStyle = hexA(c, a);
     glowOn(ctx, c, el.glow ?? 1.2);
     for (const [cx, cy] of layout.cells) ctx.fillRect((ox + cx) * S, (oy + cy) * S, S, S);
+    // A highlight sweeps across the letters, like light catching metal.
+    if (el.shine !== false && m !== 'pulse') {
+      const sx = (-0.3 + ((t * 2) % 1) * 1.6) * 100;
+      ctx.shadowBlur = 0; ctx.globalCompositeOperation = 'source-atop';
+      ctx.fillStyle = linear(ctx, sx - 14, 0, sx + 14, 0, [[0, 'rgba(255,255,255,0)'], [0.5, 'rgba(255,255,255,0.75)'], [1, 'rgba(255,255,255,0)']]);
+      ctx.fillRect(0, oy * S - S, 100, (layout.height + 2) * S);
+      ctx.globalCompositeOperation = 'source-over';
+    }
   },
 
   // Generic shape for the AI mode: points in LEDs, keyframed motion.
@@ -482,8 +500,10 @@ export function sceneFromText(input, { version = 0 } = {}) {
 
   // Lay out the still subjects (and lettering) down the narrow panel.
   const slots = mains.length + (lettering ? 1 : 0);
-  const ys = slots <= 1 ? [13] : slots === 2 ? [9, 20] : [6, 13, 21];
-  mains.forEach((el, n) => { el.y = ys[n]; el.scale = slots >= 2 ? 0.62 : 1; if (slots >= 3) el.scale = 0.45; });
+  // Two slots with lettering give the picture most of the panel and the text a strip at the bottom.
+  const pictureAndText = slots === 2 && lettering;
+  const ys = slots <= 1 ? [13] : pictureAndText ? [10, 22] : slots === 2 ? [9, 20] : [6, 13, 21];
+  mains.forEach((el, n) => { el.y = ys[n]; el.scale = slots >= 3 ? 0.45 : pictureAndText ? 0.76 : slots === 2 ? 0.62 : 1; });
   if (lettering) {
     const el = { type: 'text', text: lettering.toUpperCase() };
     const qi = words.findIndex((w) => lettering.toLowerCase().split(/\s+/)[0] === w.replace(/["“”']/g, ''));

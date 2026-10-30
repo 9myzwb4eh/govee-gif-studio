@@ -43,24 +43,39 @@ function flame(ctx, x, y, h, t, seed = 0) {
 export const FESTIVE_PAINT = {
   tree(ctx, t, i, el) {
     ctx.save(); at(ctx, el, 10, 14);
-    ctx.fillStyle = '#6a3a12'; ctx.fillRect(-6, 38, 12, 14);
+    ctx.fillStyle = '#7a4318'; ctx.fillRect(-7, 38, 14, 14);
     const green = el.color || '#1fb83a';
-    for (const [y, w, h] of [[-34, 22, 26], [-14, 32, 30], [8, 42, 34]]) {
-      ctx.fillStyle = linear(ctx, 0, y - h / 2, 0, y + h, [[0, '#7dff8a'], [0.35, green], [1, '#0a5a1a']]);
-      ctx.beginPath(); ctx.moveTo(0, y - h / 2 - 4); ctx.lineTo(w, y + h); ctx.lineTo(-w, y + h); ctx.closePath(); ctx.fill();
+    // Four layered tiers with shaded edges and snow-dusted tips.
+    for (const [y, w, h] of [[-36, 18, 22], [-20, 28, 26], [-2, 38, 30], [16, 48, 30]]) {
+      ctx.fillStyle = linear(ctx, -w, 0, w, 0, [[0, '#0a5a1a'], [0.45, green], [0.6, '#6cff7c'], [1, '#0a5a1a']]);
+      ctx.beginPath(); ctx.moveTo(0, y - h / 2 - 4);
+      ctx.quadraticCurveTo(w * 0.4, y + h * 0.4, w, y + h);
+      ctx.quadraticCurveTo(0, y + h - 6, -w, y + h);
+      ctx.quadraticCurveTo(-w * 0.4, y + h * 0.4, 0, y - h / 2 - 4); ctx.fill();
+      ctx.fillStyle = 'rgba(235,245,255,0.85)';
+      ctx.beginPath(); ctx.ellipse(-w + 3, y + h - 2, 4, 2, 0, 0, TAU); ctx.ellipse(w - 3, y + h - 2, 4, 2, 0, 0, TAU); ctx.fill();
     }
-    // Lights that chase around the tree.
-    const lights = [[-8, -26], [7, -20], [-14, -4], [12, 0], [0, -10], [-22, 22], [20, 18], [-6, 14], [9, 30], [-30, 38], [28, 38], [-14, 34]];
-    lights.forEach(([x, y], k) => {
-      const on = 0.35 + 0.65 * Math.max(0, Math.sin(TAU * (t * 2 - k / lights.length)));
-      const c = PARTY[k % 6];
-      ctx.globalAlpha = on; glow(ctx, c, 1.4); ctx.fillStyle = c;
-      ctx.beginPath(); ctx.arc(x, y, 3.2, 0, TAU); ctx.fill();
-    });
+    // A garland of lights spirals down the tree; the colours chase along it.
+    const N = 26;
+    for (let k = 0; k < N; k++) {
+      const f = k / N, yy = -42 + f * 88, half = 8 + f * 40, x = Math.sin(f * TAU * 2.2 + 0.6) * half * 0.8;
+      const front = Math.cos(f * TAU * 2.2 + 0.6) > -0.2;
+      if (!front) continue;
+      const phase = (t * 3 - f * 2) % 1, on = 0.4 + 0.6 * (phase < 0.5 ? 1 : 0.2);
+      const c = PARTY[(k + Math.floor(t * 6)) % 6];
+      ctx.globalAlpha = on; glow(ctx, c, 1.6); ctx.fillStyle = c;
+      ctx.beginPath(); ctx.arc(x, yy, 3, 0, TAU); ctx.fill();
+    }
     ctx.globalAlpha = 1;
-    const p = 1 + 0.12 * Math.sin(TAU * t * 2);
-    glow(ctx, '#ffd21f', 2.5); ctx.fillStyle = '#ffe36a';
-    ctx.translate(0, -46); ctx.scale(p, p); star5(ctx, 10); ctx.fill();
+    // Glowing star with slowly turning rays.
+    ctx.save(); ctx.translate(0, -50);
+    ctx.rotate(t * TAU / 4);
+    ctx.strokeStyle = 'rgba(255,230,140,0.55)'; ctx.lineWidth = 2;
+    for (let r = 0; r < 4; r++) { ctx.rotate(Math.PI / 4); ctx.beginPath(); ctx.moveTo(-17, 0); ctx.lineTo(17, 0); ctx.stroke(); }
+    ctx.restore();
+    const p = 1 + 0.15 * Math.sin(TAU * t * 2);
+    glow(ctx, '#ffd21f', 3); ctx.fillStyle = '#ffe36a';
+    ctx.translate(0, -50); ctx.scale(p, p); star5(ctx, 10); ctx.fill();
     ctx.restore();
   },
 
@@ -118,31 +133,52 @@ export const FESTIVE_PAINT = {
   },
 
   fireworks(ctx, t, i, el) {
+    // Each rocket climbs with a sparkling tail, bursts with a white flash, then its sparks streak out,
+    // droop under gravity, shift from white-hot to colour and crackle as they fade. Bursts alternate
+    // between round peonies, drooping willows and two-tone rings.
     const n = clamp(el.count ?? 3, 1, 6), rnd = mulberry(el.seed ?? 11), cols = palette(el);
+    const hash = (a, b) => { const x = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return x - Math.floor(x); };
     for (let k = 0; k < n; k++) {
-      const u = (t + k / n) % 1, bx = 18 + rnd() * 64, by = 18 + rnd() * 50, c = cols[(k * 3) % cols.length];
-      const c2 = cols[(k * 3 + 2) % cols.length];
-      if (u < 0.22) {
-        // Rocket trail rising to the burst point.
-        const v = EASINGS['ease-out'](u / 0.22), y = 135 - (135 - by) * v;
-        ctx.save(); glow(ctx, '#ffd9a0', 1); ctx.fillStyle = '#ffe9c0';
-        ctx.beginPath(); ctx.arc(bx, y, 2.4, 0, TAU); ctx.fill();
-        ctx.fillStyle = 'rgba(255,170,60,0.5)'; ctx.fillRect(bx - 1, y, 2, 14);
+      const u = (t + k / n) % 1, bx = 20 + rnd() * 60, by = el.y != null ? el.y * S + (rnd() - 0.5) * 24 : 16 + rnd() * 36;
+      const c = cols[(k * 3) % cols.length], c2 = cols[(k * 3 + 2) % cols.length], kind = k % 3, R = (34 + rnd() * 12) * (el.scale ?? 1);
+      ctx.save();
+      if (u < 0.18) {
+        const v = EASINGS['ease-out'](u / 0.18), y = 135 - (135 - by) * v, x = bx + (1 - v) * (k % 2 ? 6 : -6);
+        for (let s = 1; s <= 5; s++) {
+          ctx.globalAlpha = (1 - s / 6) * 0.8; ctx.fillStyle = s < 2 ? '#fff2c0' : '#ffaa40';
+          ctx.beginPath(); ctx.arc(x + Math.sin(s * 2.1 + u * 40) * 1.5, y + s * 5, 2.2 - s * 0.25, 0, TAU); ctx.fill();
+        }
+        ctx.globalAlpha = 1; glow(ctx, '#ffe0a0', 1.5); ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(x, y, 2.6, 0, TAU); ctx.fill();
         ctx.restore();
         continue;
       }
-      const v = (u - 0.22) / 0.78, r = 40 * EASINGS['ease-out'](Math.min(1, v * 1.4)), fade = Math.max(0, 1 - v) ** 1.3;
-      const sparks = 14;
-      ctx.save(); ctx.globalAlpha = fade; glow(ctx, c, 1.6);
-      for (let p = 0; p < sparks; p++) {
-        const a = (p / sparks) * TAU + k, x = bx + Math.cos(a) * r, y = by + Math.sin(a) * r + v * v * 18;
-        ctx.fillStyle = p % 2 ? c : c2;
-        ctx.beginPath(); ctx.arc(x, y, 3.2 * (1 - v * 0.5), 0, TAU); ctx.fill();
-        ctx.globalAlpha = fade * 0.45;
-        ctx.beginPath(); ctx.arc(bx + Math.cos(a) * r * 0.6, by + Math.sin(a) * r * 0.6 + v * v * 10, 2, 0, TAU); ctx.fill();
-        ctx.globalAlpha = fade;
+      const v = (u - 0.18) / 0.82, fade = Math.min(1, 1.25 * Math.max(0, 1 - v) ** 0.9);
+      if (v < 0.1) {
+        glow(ctx, '#ffffff', 4); ctx.fillStyle = `rgba(255,250,235,${1 - v / 0.1})`;
+        ctx.beginPath(); ctx.arc(bx, by, 6 + 60 * v, 0, TAU); ctx.fill();
       }
-      if (v < 0.15) { ctx.fillStyle = '#ffffff'; glow(ctx, '#ffffff', 3); ctx.beginPath(); ctx.arc(bx, by, 9 * (1 - v / 0.15), 0, TAU); ctx.fill(); }
+      const sparks = kind === 1 ? 22 : 30, drop = kind === 1 ? 46 : 16;
+      const pos = (p, vv) => {
+        // Alternate sparks belong to an inner shell, which fills the burst instead of leaving a thin ring.
+        const a = (p / sparks) * TAU + k * 0.7 + (hash(p, k) - 0.5) * 0.18, rr = R * (p % 2 && kind !== 2 ? 0.55 : 0.85 + hash(k, p) * 0.3);
+        const r = rr * EASINGS['ease-out'](Math.min(1, vv * 1.5));
+        return [bx + Math.cos(a) * r, by + Math.sin(a) * r + vv * vv * drop];
+      };
+      ctx.lineCap = 'round';
+      for (let p = 0; p < sparks; p++) {
+        const col = kind === 2 && p % 2 ? c2 : c;
+        const hot = Math.max(0, 1 - v / 0.25);
+        const [x, y] = pos(p, v), [px, py] = pos(p, Math.max(0, v - (kind === 1 ? 0.2 : 0.13)));
+        const crackle = v > 0.55 ? (hash(p + k * 31, Math.floor(t * 48)) > 0.45 ? 1 : 0.25) : 1;
+        ctx.globalAlpha = fade * 0.7 * crackle;
+        ctx.strokeStyle = col; ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(x, y); ctx.stroke();
+        ctx.globalAlpha = fade * crackle; glow(ctx, col, 1.4);
+        ctx.fillStyle = hot > 0 ? '#ffffff' : col;
+        ctx.beginPath(); ctx.arc(x, y, 2.6 * (1 - v * 0.4), 0, TAU); ctx.fill();
+        if (hot > 0) { ctx.globalAlpha = fade * (1 - hot); ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, 2.6, 0, TAU); ctx.fill(); }
+      }
       ctx.restore();
     }
   },
@@ -177,12 +213,16 @@ export const FESTIVE_PAINT = {
 
   diya(ctx, t, i, el) {
     ctx.save(); at(ctx, el, 10, 16);
+    const L = 0.8 + 0.2 * Math.sin(TAU * (t * 5 + (el.seed ?? 0) * 0.37));
+    ctx.fillStyle = radial(ctx, 6, -16, 40, [[0, `rgba(255,170,40,${0.45 * L})`], [1, 'rgba(255,120,0,0)']]);
+    ctx.fillRect(-44, -60, 100, 90);
     ctx.save(); glow(ctx, '#ff8a00', 1);
     ctx.fillStyle = linear(ctx, 0, 0, 0, 22, [[0, el.color || '#ff8a2a'], [1, '#7a2a00']]);
     ctx.beginPath(); ctx.moveTo(-34, 0); ctx.quadraticCurveTo(0, 40, 34, 0); ctx.quadraticCurveTo(40, -4, 26, -4); ctx.lineTo(-26, -4); ctx.quadraticCurveTo(-40, -4, -34, 0); ctx.fill();
     ctx.fillStyle = '#ffd21f'; ctx.fillRect(-24, 4, 48, 3);
+    ctx.fillStyle = '#ff2adf'; for (const x of [-16, 0, 16]) { ctx.beginPath(); ctx.arc(x, 12, 2.6, 0, TAU); ctx.fill(); }
     ctx.restore();
-    flame(ctx, 6, -4, 34, t, (el.seed ?? 0) * 0.37);
+    flame(ctx, 6, -4, 36, t, (el.seed ?? 0) * 0.37);
     ctx.restore();
   },
 
@@ -522,11 +562,11 @@ function nextYear() {
   return d.getMonth() >= 9 ? d.getFullYear() + 1 : d.getFullYear();
 }
 export const FESTIVALS = [
-  { words: ['halloween', 'spooky', 'trick or treat'], label: 'Halloween', more: [{ els: [{ type: 'bats', count: 4 }, { type: 'ghost', motion: 'rise' }], text: 'BOO' }, { els: [{ type: 'stars' }, { type: 'moon' }, { type: 'witch' }], text: 'HAPPY HALLOWEEN' }, { els: [{ type: 'eyes', count: 4 }, { type: 'skull' }], text: 'TRICK OR TREAT' }, { els: [{ type: 'spider', count: 2 }, { type: 'pumpkin', count: 2 }], text: 'SPOOKY' }], els: [{ type: 'moon' }, { type: 'bats', count: 3 }, { type: 'pumpkin' }], text: 'BOO', color: '#ff6a00' },
+  { words: ['halloween', 'spooky', 'trick or treat'], label: 'Halloween', more: [{ els: [{ type: 'bats', count: 4 }, { type: 'ghost', motion: 'rise' }], text: 'BOO' }, { els: [{ type: 'stars' }, { type: 'moon' }, { type: 'witch' }], text: 'HAPPY HALLOWEEN' }, { els: [{ type: 'eyes', count: 4 }, { type: 'skull' }], text: 'TRICK OR TREAT' }, { els: [{ type: 'spider', count: 2 }, { type: 'pumpkin', count: 2 }], text: 'SPOOKY' }], els: [{ type: 'moon', x: 15.5, y: 4, r: 3.2 }, { type: 'bats', count: 3 }, { type: 'pumpkin' }], text: 'BOO', color: '#ff6a00' },
   { words: ['christmas', 'xmas', 'santa', 'noel', 'yuletide'], label: 'Christmas', more: [{ els: [{ type: 'stars' }, { type: 'snow' }, { type: 'santa' }], text: 'HO HO HO' }, { els: [{ type: 'sparkles' }, { type: 'baubles', count: 3 }], text: 'MERRY XMAS' }, { els: [{ type: 'snow' }, { type: 'snowman' }], text: 'LET IT SNOW' }, { els: [{ type: 'sparkles' }, { type: 'wreath' }], text: 'JOY' }, { els: [{ type: 'snow' }, { type: 'bells' }], text: 'JINGLE BELLS' }, { els: [{ type: 'snow' }, { type: 'candycane', count: 2 }], text: 'SEASONS GREETINGS' }, { els: [{ type: 'sparkles' }, { type: 'gift', count: 3 }], text: 'MERRY CHRISTMAS' }], els: [{ type: 'snow' }, { type: 'tree' }], text: 'MERRY CHRISTMAS', color: '#ff1a2a' },
   { words: ['new year', 'newyear', 'nye', "new year's", 'countdown'], label: 'New Year', more: [{ els: [{ type: 'balloons', count: 5 }, { type: 'confetti', count: 24 }], text: 'CHEERS' }, { els: [{ type: 'fireworks', count: 6, colors: ['#ffd21f', '#ffffff', '#ffb21f'] }], text: () => `HELLO ${nextYear()}` }, { els: [{ type: 'sparkles', count: 20 }, { type: 'bells' }], text: 'HAPPY NEW YEAR' }], els: [{ type: 'fireworks', count: 4 }, { type: 'sparkles' }], text: () => `HAPPY ${nextYear()}`, color: '#ffd21f', skipWhen: ['lunar', 'chinese'] },
   { words: ['lunar new year', 'chinese new year', 'spring festival', 'tet', 'seollal'], label: 'Lunar New Year', more: [{ els: [{ type: 'sparkles', color: '#ffd21f' }, { type: 'lantern', count: 2 }], text: 'GONG XI FA CAI' }, { els: [{ type: 'fireworks', count: 5, colors: ['#ff1a2a', '#ffd21f'] }], text: 'HAPPY NEW YEAR' }], els: [{ type: 'fireworks', count: 3, color: '#ffd21f' }, { type: 'lantern' }], text: 'HAPPY NEW YEAR', color: '#ffd21f' },
-  { words: ['diwali', 'deepavali', 'dipawali', 'deepawali'], label: 'Diwali', more: [{ els: [{ type: 'sparkles', color: '#ffd21f' }, { type: 'rangoli' }], text: 'SHUBH DIWALI' }, { els: [{ type: 'fireworks', count: 2 }, { type: 'diya', count: 3 }], text: 'HAPPY DIWALI' }, { els: [{ type: 'fireworks', count: 6 }, { type: 'sparkles' }], text: 'HAPPY DIWALI' }, { els: [{ type: 'sparkles', color: '#ffb21f' }, { type: 'lantern', color: '#ff6a00' }], text: 'DEEPAVALI' }], els: [{ type: 'fireworks', count: 3 }, { type: 'diya' }], text: 'HAPPY DIWALI', color: '#ffb21f' },
+  { words: ['diwali', 'deepavali', 'dipawali', 'deepawali'], label: 'Diwali', more: [{ els: [{ type: 'sparkles', color: '#ffd21f' }, { type: 'rangoli' }], text: 'SHUBH DIWALI' }, { els: [{ type: 'fireworks', count: 2 }, { type: 'diya', count: 3 }], text: 'HAPPY DIWALI' }, { els: [{ type: 'fireworks', count: 6 }, { type: 'sparkles' }], text: 'HAPPY DIWALI' }, { els: [{ type: 'sparkles', color: '#ffb21f' }, { type: 'lantern', color: '#ff6a00' }], text: 'DEEPAVALI' }], els: [{ type: 'fireworks', count: 3, y: 5, scale: 0.7 }, { type: 'diya' }], text: 'HAPPY DIWALI', color: '#ffb21f' },
   { words: ['easter'], label: 'Easter', more: [{ els: [{ type: 'sparkles' }, { type: 'egg', count: 4 }], text: 'HAPPY EASTER' }, { els: [{ type: 'flower', count: 3 }], text: 'SPRING' }, { els: [{ type: 'bunny' }], text: 'HOP HOP' }], els: [{ type: 'bunny' }, { type: 'egg', count: 3 }], text: 'HAPPY EASTER', color: '#ff4fa8' },
   { words: ['eid', 'ramadan', 'ramzan', 'mubarak'], label: 'Eid', more: [{ els: [{ type: 'sparkles', color: '#ffd21f' }, { type: 'lantern', color: '#ffb21f', count: 2 }] }, { els: [{ type: 'fireworks', count: 3, colors: ['#ffd21f', '#3ddc4a', '#ffffff'] }, { type: 'crescent' }] }], els: [{ type: 'sparkles' }, { type: 'crescent' }], text: () => null, color: '#ffd21f' },
   { words: ['hanukkah', 'chanukah', 'hanukah'], label: 'Hanukkah', more: [{ els: [{ type: 'sparkles', color: '#ffffff', count: 20 }, { type: 'menorah', color: '#c8d0e0' }], text: 'CHAG SAMEACH' }], els: [{ type: 'sparkles', color: '#4f8bff' }, { type: 'menorah' }], text: 'HAPPY HANUKKAH', color: '#4f8bff' },
