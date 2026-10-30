@@ -68,16 +68,26 @@ const PAINT = {
   },
 
   ghost(ctx, t, i, el) {
-    const m = el.motion || 'rise', s = el.scale ?? 1;
-    let x = (el.x ?? 10) * S, y = (el.y ?? 13) * S, a = 1;
-    if (m === 'rise') { y = 160 - ease(t) * 130; a = Math.min(1, t / 0.15) * Math.min(1, (1 - t) / 0.2); x += Math.sin(TAU * t * 2) * 6; }
-    else if (m === 'cross') { x = -30 + t * 160; y += Math.sin(TAU * t * 2) * 8; }
-    else { y += Math.sin(TAU * t) * 8; x += Math.sin(TAU * t * 2) * 3; }
-    ctx.save();
-    glowOn(ctx, el.color || '#9fd8ff', 2.5);
-    ctx.translate(x, y); ctx.scale(s, s);
-    drawGhost(ctx, 0, 0, a, TAU * t * 4);
-    ctx.restore();
+    const m = el.motion || 'rise', n = clamp(el.count ?? 1, 1, 6);
+    const s = (el.scale ?? 1) * (n > 1 ? Math.max(0.42, 0.75 - n * 0.05) : 1);
+    for (let k = 0; k < n; k++) {
+      // Several ghosts share one loop, offset in time and spread over the panel so they don't overlap.
+      const off = n > 1 ? k / n : 0, u = (t + off) % 1, lane = n > 1 ? (k + 0.5) / n : 0.5;
+      let x = n > 1 ? (m === 'float' ? lane * 100 : 50) : (el.x ?? 10) * S, y = (el.y ?? 13) * S, a = 1;
+      if (m === 'rise') {
+        if (n > 1) x = 18 + (((k * 2) % n) + 0.5) / n * 64;
+        y = 160 - ease(u) * 130; a = Math.min(1, u / 0.15) * Math.min(1, (1 - u) / 0.2); x += Math.sin(TAU * (u * 2 + off)) * 6;
+      } else if (m === 'cross') {
+        if (n > 1) y = 22 + lane * 86;
+        const dir = n > 1 && k % 2 ? -1 : 1;
+        x = dir > 0 ? -30 + u * 160 : 130 - u * 160; y += Math.sin(TAU * (t * 2 + off)) * 6;
+      } else { y += Math.sin(TAU * (t + off)) * 8; x += Math.sin(TAU * (t * 2 + off)) * 3; }
+      ctx.save();
+      glowOn(ctx, el.color || '#9fd8ff', 2.5);
+      ctx.translate(x, y); ctx.scale(s, s);
+      drawGhost(ctx, 0, 0, a, TAU * (t * 4 + off));
+      ctx.restore();
+    }
   },
 
   bats(ctx, t, i, el) {
@@ -398,15 +408,15 @@ export function sceneFromText(input) {
     const color = k >= 0 ? colorNear(k) : null;
     const el = { type };
     if (color) el.color = color;
-    if (type === 'bats' || type === 'eyes') { const n = k >= 0 ? countNear(k) : null; if (n) el.count = n; }
+    if (type === 'bats' || type === 'eyes' || type === 'ghost') { const n = k >= 0 ? countNear(k) : null; if (n) el.count = n; }
     if (type === 'ghost' && k >= 0) {
       if (near(k, ['floating', 'float', 'hovering', 'bobbing'])) el.motion = 'float';
-      else if (near(k, ['flying', 'crossing', 'across', 'drifting'])) el.motion = 'cross';
+      else if (near(k, ['flying', 'fly', 'flies', 'crossing', 'across', 'drifting', 'flying across'])) el.motion = 'cross';
       else el.motion = 'rise';
     }
-    if (['pumpkin', 'skull', 'heart'].includes(type) || (type === 'ghost' && el.motion === 'float')) mains.push(el);
+    if (['pumpkin', 'skull', 'heart'].includes(type) || (type === 'ghost' && el.motion === 'float' && !(el.count > 1))) mains.push(el);
     elements.push(el);
-    understood.push(color ? `${Object.keys(COLORS).find((n) => COLORS[n] === color)} ${type}` : type);
+    understood.push(`${el.count > 1 ? el.count + ' ' : ''}${color ? Object.keys(COLORS).find((n) => COLORS[n] === color) + ' ' : ''}${type}${type === 'ghost' ? ' (' + el.motion + ')' : ''}`);
   }
 
   // Lay out the still subjects (and lettering) down the narrow panel.

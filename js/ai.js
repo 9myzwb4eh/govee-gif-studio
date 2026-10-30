@@ -67,7 +67,7 @@ What looks good on this panel:
 - 24-48 frames at 50-90 ms is a good range. Never more than 100 frames.
 
 Element types:
-- Built-in animated elements, which look polished, so prefer them when they fit: stars {density 0.03-0.2}, moon {x,y,r,color}, pumpkin {x,y,scale,color}, ghost {motion rise|float|cross, x,y,scale}, bats {count, color}, spider, witch {y}, lightning {color}, rain {color}, snow {color}, fire, eyes {count,color}, skull {x,y,scale}, heart {x,y,scale,color}.
+- Built-in animated elements, which look polished, so prefer them when they fit: stars {density 0.03-0.2}, moon {x,y,r,color}, pumpkin {x,y,scale,color}, ghost {motion rise|float|cross, count 1-6, x,y,scale}, bats {count, color}, spider, witch {y}, lightning {color}, rain {color}, snow {color}, fire, eyes {count,color}, skull {x,y,scale}, heart {x,y,scale,color}.
 - text {text, color, motion still|scroll|pulse, y}: letters are 3x5 LEDs. Up to 5 characters fit across; longer text should scroll.
 - shape {shape circle|ellipse|rect|polygon|line|path, color, gradient (center color), glow, fill, lineWidth, r|rx,ry|w,h, points (for polygon/line/path, relative to the keyframe position), keyframes [{t,x,y,scale,rotate,opacity}]}: for anything else. Build objects from several shapes that share keyframes.
 Elements draw back to front. Use at most 9 elements besides stars.`;

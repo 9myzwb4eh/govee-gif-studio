@@ -104,7 +104,7 @@ for (const t of TEMPLATES) {
 }
 
 // 8. Text-to-scene builder.
-for (const prompt of ['orange pumpkin, stars, "BOO"', 'ghost rising, three bats, moon', 'witch flying across the moon with stars', 'lightning storm with rain', 'red beating heart, "LOVE" pulsing', 'snow falling slowly, "HAPPY HOLIDAYS"', 'skull with fire and green eyes', 'hello there']) {
+for (const prompt of ['orange pumpkin, stars, "BOO"', 'ghost rising, three bats, moon', 'witch flying across the moon with stars', 'lightning storm with rain', 'red beating heart, "LOVE" pulsing', 'snow falling slowly, "HAPPY HOLIDAYS"', 'skull with fire and green eyes', 'hello there', 'three ghosts flying']) {
   const { scene, understood } = sceneFromText(prompt);
   const sp = renderScene(scene);
   const r = analyse(ledFrames(sp));
@@ -112,6 +112,8 @@ for (const prompt of ['orange pumpkin, stars, "BOO"', 'ghost rising, three bats,
 }
 const three = sceneFromText('three purple bats').scene.elements[0];
 check('Scene builder reads counts and colors', three.count === 3 && three.color === '#9b30ff', JSON.stringify(three));
+const gh = sceneFromText('three ghosts flying').scene.elements.find((e) => e.type === 'ghost');
+check('Scene builder reads "three ghosts flying"', gh && gh.count === 3 && gh.motion === 'cross', JSON.stringify(gh));
 const shapeScene = renderScene({ frames: 8, elements: [{ type: 'shape', shape: 'circle', r: 3, color: '#ff0000', keyframes: [{ t: 0, x: 4, y: 13 }, { t: 1, x: 16, y: 13 }] }] });
 const xs2 = shapeScene.frames.map((f) => { const L = shapeScene.layers[1].id; return f.cels[L] ? centroid(f.cels[L])[0] : 0; });
 check('AI shape keyframes move smoothly', xs2.every((x, i) => !i || x > xs2[i - 1]), xs2.map((x) => (x / 5).toFixed(1)).join(' → '));

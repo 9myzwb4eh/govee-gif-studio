@@ -1,5 +1,5 @@
 // Offline cache for the app shell. Bump VERSION when files change.
-const VERSION = 'ggs-v3';
+const VERSION = 'ggs-v4';
 const FILES = [
   './', 'index.html', 'css/app.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-180.png', 'icons/icon-192.png',
   'js/app.js', 'js/model.js', 'js/raster.js', 'js/paint.js', 'js/led.js', 'js/gif.js', 'js/font.js', 'js/effects.js',
