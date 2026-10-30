@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0d0b14">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Curtain GIF">
+  <title>Curtain GIF Studio</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z M14 7l3 3" /></symbol>
+    <symbol id="i-brush" viewBox="0 0 24 24"><path d="M20 4c-4 2-8 6-10 9l2 2c3-2 7-6 8-11z M9 14c-3 0-4 2-4 4s-1 2-2 2c3 1 7 0 8-3z" /></symbol>
+    <symbol id="i-eraser" viewBox="0 0 24 24"><path d="M3 15l9-9 7 7-6 6H8z M8 19h12 M9 9l7 7" /></symbol>
+    <symbol id="i-fill" viewBox="0 0 24 24"><path d="M5 11l6-6 7 7-6 6a2 2 0 01-3 0L5 14a2 2 0 010-3z M5 12h13 M20 15s2 2.5 2 4a2 2 0 01-4 0c0-1.5 2-4 2-4z" /></symbol>
+    <symbol id="i-line" viewBox="0 0 24 24"><path d="M5 19L19 5" /><circle cx="5" cy="19" r="1.6" /><circle cx="19" cy="5" r="1.6" /></symbol>
+    <symbol id="i-rect" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1.5" /></symbol>
+    <symbol id="i-ellipse" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8.5" ry="6.5" /></symbol>
+    <symbol id="i-gradient" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4.5" opacity=".6" /><circle cx="12" cy="12" r="1.5" /></symbol>
+    <symbol id="i-picker" viewBox="0 0 24 24"><path d="M14 4l6 6-2 2-6-6z M13 7l-8 8-1 5 5-1 8-8" /></symbol>
+    <symbol id="i-select" viewBox="0 0 24 24"><path d="M4 8V4h4 M16 4h4v4 M20 16v4h-4 M8 20H4v-4 M11 4h2 M11 20h2 M4 11v2 M20 11v2" /></symbol>
+    <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 6V4h14v2 M12 4v16 M9 20h6" /></symbol>
+    <symbol id="i-mirror-h" viewBox="0 0 24 24"><path d="M12 3v18 M9 7L4 12l5 5z M15 7l5 5-5 5z" /></symbol>
+    <symbol id="i-mirror-v" viewBox="0 0 24 24"><path d="M3 12h18 M7 9l5-5 5 5z M7 15l5 5 5-5z" /></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5 M4 9h10a6 6 0 010 12h-3" /></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5 M20 9H10a6 6 0 000 12h3" /></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" /></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 4h3v16H7z M14 4h3v16h-3z" /></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24"><path d="M6 5v14 M19 5l-10 7 10 7z" /></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="M18 5v14 M5 5l10 7-10 7z" /></symbol>
+    <symbol id="i-loop" viewBox="0 0 24 24"><path d="M17 3l3 3-3 3 M4 11V9a3 3 0 013-3h13 M7 21l-3-3 3-3 M20 13v2a3 3 0 01-3 3H4" /></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14 M5 12h14" /></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3" /></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6" /></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></symbol>
+    <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M3 3l18 18 M10.6 5.1A10 10 0 0112 5c6 0 10 7 10 7a17 17 0 01-3 3.7 M6.5 6.6C3.8 8.4 2 12 2 12s4 7 10 7a9.6 9.6 0 004.5-1.1" /></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6" /></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></symbol>
+    <symbol id="i-onion" viewBox="0 0 24 24"><circle cx="9" cy="12" r="6" opacity=".45" /><circle cx="15" cy="12" r="6" /></symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l2 7 7 2-7 2-2 7-2-7-7-2 7-2z" /></symbol>
+    <symbol id="i-import" viewBox="0 0 24 24"><path d="M12 3v12 M7 10l5 5 5-5 M4 17v3h16v-3" /></symbol>
+    <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V3 M7 8l5-5 5 5 M4 17v3h16v-3" /></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.7-2.5 2-2.5 4 M12 17v.5" /></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1" /><path d="M9.3 4v16 M14.6 4v16 M4 9.3h16 M4 14.6h16" /></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></symbol>
+    <symbol id="i-wand" viewBox="0 0 24 24"><path d="M4 20L15 9 M13 7l4 4 M18 3v3 M21 6h-3 M19 10v2 M13 3h2" /></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z M3 13l9 5 9-5" /></symbol>
+    <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 100 18c1.5 0 2-1 2-2s-1-1.5-1-2.5 1-1.5 2-1.5h2a4 4 0 004-4c0-4.5-4-8-9-8z" /><circle cx="7.5" cy="11" r="1.3" /><circle cx="11" cy="7" r="1.3" /><circle cx="15.5" cy="8" r="1.3" /></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10 M18 7h2 M4 17h4 M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></symbol>
+    <symbol id="i-film" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M7 5v14 M17 5v14 M3 9h4 M3 15h4 M17 9h4 M17 15h4" /></symbol>
+    <symbol id="i-tool" viewBox="0 0 24 24"><path d="M14.5 5.5a4 4 0 00-5 5L4 16l4 4 5.5-5.5a4 4 0 005-5L16 12l-4-4z" /></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16 M4 12h16 M4 17h16" /></symbol>
+  </defs>
+</svg>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <input id="projectName" class="name-input" value="Untitled" aria-label="Project name" spellcheck="false">
+    </div>
+    <div class="top-actions">
+      <button class="btn ghost icon-only desk-only" id="undoBtn" title="Undo (Ctrl+Z)"><svg><use href="#i-undo"/></svg></button>
+      <button class="btn ghost icon-only desk-only" id="redoBtn" title="Redo (Ctrl+Shift+Z)"><svg><use href="#i-redo"/></svg></button>
+      <span class="sep desk-only"></span>
+      <button class="btn ghost" data-open="projectsDlg"><svg><use href="#i-folder"/></svg><span>Projects</span></button>
+      <button class="btn ghost" data-open="templatesDlg"><svg><use href="#i-sparkle"/></svg><span>Templates</span></button>
+      <button class="btn ghost" data-open="effectsDlg"><svg><use href="#i-wand"/></svg><span>Effects</span></button>
+      <button class="btn ghost" id="importBtn"><svg><use href="#i-import"/></svg><span>Import</span></button>
+      <button class="btn ghost icon-only" data-open="helpDlg" title="Help"><svg><use href="#i-help"/></svg></button>
+      <button class="btn primary" id="exportBtn"><svg><use href="#i-export"/></svg><span>Export</span></button>
+    </div>
+  </header>
+
+  <nav class="toolrail" id="toolrail" aria-label="Tools"></nav>
+
+  <main class="stage" id="stage">
+    <div class="stage-inner">
+      <canvas id="work" class="work-canvas" aria-label="Drawing canvas"></canvas>
+      <button class="pip" id="pip" title="Panel preview (tap to resize)"><canvas id="pipCanvas"></canvas></button>
+    </div>
+    <div class="stage-bar">
+      <button class="chip mobile-only" id="undoBtnM" title="Undo"><svg><use href="#i-undo"/></svg></button>
+      <button class="chip mobile-only" id="redoBtnM" title="Redo"><svg><use href="#i-redo"/></svg></button>
+      <button class="chip toggle" id="mirrorX" title="Mirror left/right (H)"><svg><use href="#i-mirror-h"/></svg><kbd>H</kbd></button>
+      <button class="chip toggle" id="mirrorY" title="Mirror top/bottom (V)"><svg><use href="#i-mirror-v"/></svg><kbd>V</kbd></button>
+      <button class="chip toggle" id="gridToggle" title="Show LED grid (#)"><svg><use href="#i-grid"/></svg></button>
+      <button class="chip toggle" id="panelView" title="Show the canvas as the panel sees it (Q)"><span class="dot-ico"></span>Panel view<kbd>Q</kbd></button>
+      <span class="coords" id="coords"></span>
+    </div>
+  </main>
+
+  <aside class="side" id="side">
+    <section class="card preview-card" data-sheet="preview">
+      <div class="card-head">
+        <h2>Panel</h2>
+        <div class="seg" id="previewMode">
+          <button data-v="led" class="on">LED glow</button>
+          <button data-v="flat">Pixels</button>
+        </div>
+      </div>
+      <div class="preview-wrap"><canvas id="preview"></canvas></div>
+      <div class="preview-meta"><span id="previewInfo">20 × 26 · frame 1/1</span><span id="colorWarn" class="warn-chip" hidden></span></div>
+    </section>
+
+    <section class="card" data-sheet="options">
+      <div class="card-head"><h2 id="optTitle">Brush</h2></div>
+      <div id="toolOptions" class="opts"></div>
+    </section>
+
+    <section class="card" data-sheet="color">
+      <div class="card-head">
+        <h2>Color</h2>
+        <button class="btn tiny ghost" data-open="paletteDlg">Palettes</button>
+      </div>
+      <div class="color-row">
+        <div class="swatch-pair">
+          <label class="swatch big" id="primarySw" title="Primary color"><input type="color" id="primary"></label>
+          <label class="swatch small" id="secondarySw" title="Secondary color"><input type="color" id="secondary"></label>
+          <button class="swap" id="swapColors" title="Swap (X)">⇄</button>
+        </div>
+        <div class="palette" id="palette"></div>
+      </div>
+      <div class="field">
+        <label for="snap">Snap to palette <output id="snapOut">0%</output></label>
+        <input type="range" id="snap" min="0" max="100" value="0">
+      </div>
+      <p class="hint" id="snapHint">Off keeps smooth colors. Turn it up for a crisp retro look.</p>
+    </section>
+
+    <section class="card" data-sheet="layers">
+      <div class="card-head">
+        <h2>Layers <small id="layerCount"></small></h2>
+        <div class="row-btns">
+          <button class="btn tiny ghost icon-only" id="layerAdd" title="Add layer"><svg><use href="#i-plus"/></svg></button>
+          <button class="btn tiny ghost icon-only" id="layerDup" title="Duplicate layer"><svg><use href="#i-copy"/></svg></button>
+          <button class="btn tiny ghost icon-only" id="layerUp" title="Move up"><svg><use href="#i-up"/></svg></button>
+          <button class="btn tiny ghost icon-only" id="layerDown" title="Move down"><svg><use href="#i-down"/></svg></button>
+          <button class="btn tiny ghost icon-only" id="layerDel" title="Delete layer"><svg><use href="#i-trash"/></svg></button>
+        </div>
+      </div>
+      <ul class="layers" id="layers"></ul>
+      <div class="layer-props" id="layerProps">
+        <div class="field">
+          <label for="layerOpacity">Opacity <output id="layerOpacityOut">100%</output></label>
+          <input type="range" id="layerOpacity" min="0" max="100" value="100">
+        </div>
+        <div class="field inline">
+          <label for="layerBlend">Blend</label>
+          <select id="layerBlend">
+            <option value="normal">Normal</option>
+            <option value="add">Add (light)</option>
+            <option value="screen">Screen</option>
+          </select>
+          <button class="btn tiny ghost" id="layerMerge">Merge down</button>
+          <button class="btn tiny ghost" id="layerAllFrames" title="Copy this layer from the current frame into every frame">Copy to all frames</button>
+        </div>
+      </div>
+    </section>
+  </aside>
+
+  <footer class="timeline" id="timeline">
+    <div class="tl-controls">
+      <button class="btn ghost icon-only" id="prevFrame" title="Previous frame (,)"><svg><use href="#i-prev"/></svg></button>
+      <button class="btn round" id="playBtn" title="Play / pause (Space)"><svg><use href="#i-play"/></svg></button>
+      <button class="btn ghost icon-only" id="nextFrame" title="Next frame (.)"><svg><use href="#i-next"/></svg></button>
+      <button class="chip toggle on" id="loopBtn" title="Loop playback"><svg><use href="#i-loop"/></svg></button>
+      <button class="chip toggle" id="onionBtn" title="Onion skin (U)"><svg><use href="#i-onion"/></svg><kbd>U</kbd></button>
+      <div class="onion-opts" id="onionOpts">
+        <label>Before <input type="number" id="onionBefore" min="0" max="5" value="1"></label>
+        <label>After <input type="number" id="onionAfter" min="0" max="5" value="1"></label>
+        <label>Fade <input type="range" id="onionOpacity" min="5" max="80" value="30"></label>
+      </div>
+      <span class="tl-spacer"></span>
+      <div class="frame-props">
+        <label title="How long this frame shows">Duration <input type="number" id="frameDuration" min="10" max="10000" step="10"> ms</label>
+        <label title="Extra time to hold this frame, without duplicating it">Hold <input type="number" id="frameHold" min="0" max="20000" step="50"> ms</label>
+        <button class="btn tiny ghost" id="durAll" title="Use this duration for every frame">All</button>
+      </div>
+      <span class="tl-stats" id="tlStats"></span>
+    </div>
+    <div class="tl-strip-wrap">
+      <div class="tl-strip" id="frames"></div>
+      <div class="tl-actions">
+        <button class="btn ghost icon-only" id="frameAdd" title="New frame (N)"><svg><use href="#i-plus"/></svg></button>
+        <button class="btn ghost icon-only" id="frameDup" title="Duplicate frame (Shift+N)"><svg><use href="#i-copy"/></svg></button>
+        <button class="btn ghost icon-only" id="frameLeft" title="Move frame left"><svg><use href="#i-left"/></svg></button>
+        <button class="btn ghost icon-only" id="frameRight" title="Move frame right"><svg><use href="#i-right"/></svg></button>
+        <button class="btn ghost icon-only" id="frameDel" title="Delete frame"><svg><use href="#i-trash"/></svg></button>
+      </div>
+    </div>
+  </footer>
+
+  <nav class="dock" id="dock" aria-label="Panels">
+    <button data-sheet-btn="tools" class="on"><svg><use href="#i-tool"/></svg>Tools</button>
+    <button data-sheet-btn="options"><svg><use href="#i-sliders"/></svg>Options</button>
+    <button data-sheet-btn="color"><svg><use href="#i-palette"/></svg>Color</button>
+    <button data-sheet-btn="layers"><svg><use href="#i-layers"/></svg>Layers</button>
+    <button data-sheet-btn="frames"><svg><use href="#i-film"/></svg>Frames</button>
+  </nav>
+</div>
+
+<input type="file" id="fileInput" accept="image/png,image/jpeg,image/gif,.json,application/json" hidden>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Recover -->
+<div class="recover" id="recover" hidden>
+  <div>
+    <strong>Recover last session?</strong>
+    <span id="recoverInfo"></span>
+  </div>
+  <button class="btn primary" id="recoverYes">Recover last session</button>
+  <button class="btn ghost" id="recoverNo">Start fresh</button>
+</div>
+
+<!-- Templates -->
+<dialog id="templatesDlg" class="dlg wide">
+  <form method="dialog" class="dlg-head"><h2>Templates</h2><button class="x" aria-label="Close">×</button></form>
+  <p class="dlg-sub">Each one opens as a normal project: every layer and frame is yours to edit.</p>
+  <div class="tpl-grid" id="tplGrid"></div>
+</dialog>
+
+<!-- Effects -->
+<dialog id="effectsDlg" class="dlg wide">
+  <form method="dialog" class="dlg-head"><h2>Effects &amp; generators</h2><button class="x" aria-label="Close">×</button></form>
+  <div class="tabs" id="fxTabs">
+    <button data-tab="tween" class="on">Tween</button>
+    <button data-tab="twinkle">Twinkle</button>
+    <button data-tab="text">Text</button>
+    <button data-tab="glow">Glow</button>
+    <button data-tab="trail">Trail</button>
+    <button data-tab="fire">Fire</button>
+    <button data-tab="fade">Fade</button>
+  </div>
+  <div class="fx-body">
+    <div class="fx-pane on" data-pane="tween">
+      <p class="hint">Generates in-between frames on the current layer. Movement is sub-pixel, so shapes glide smoothly across the LEDs.</p>
+      <div class="grid2">
+        <label>Start frame <input type="number" id="twStart" min="1" value="1"></label>
+        <label>End frame <input type="number" id="twEnd" min="1" value="2"></label>
+        <label>Frames to add <input type="number" id="twSteps" min="1" max="60" value="6"></label>
+        <label>Easing <select id="twEase"><option>ease-in-out</option><option>linear</option><option>ease-in</option><option>ease-out</option><option>bounce</option></select></label>
+        <label>Mode <select id="twMode"><option value="move">Move / scale / fade</option><option value="fade">Cross-fade start → end</option></select></label>
+        <label class="check"><input type="checkbox" id="twAuto" checked> Find the end position from the end frame</label>
+        <label>Move X (LEDs) <input type="number" id="twDx" step="0.5" value="0"></label>
+        <label>Move Y (LEDs) <input type="number" id="twDy" step="0.5" value="0"></label>
+        <label>End scale <input type="number" id="twScale" step="0.1" value="1"></label>
+        <label>Rotate (°) <input type="number" id="twRot" step="5" value="0"></label>
+        <label>Opacity start <input type="number" id="twOpA" step="0.1" min="0" max="1" value="1"></label>
+        <label>Opacity end <input type="number" id="twOpB" step="0.1" min="0" max="1" value="1"></label>
+      </div>
+      <p class="hint">With a selection active, only the selected area moves. Tip: draw the object in the start frame, then in the end frame place it where it should land, and leave the automatic position on.</p>
+      <button class="btn primary" id="twGo">Generate frames</button>
+    </div>
+    <div class="fx-pane" data-pane="twinkle">
+      <p class="hint">Adds a looping star field on a "Stars" layer across every frame.</p>
+      <div class="grid2">
+        <label>Density <input type="range" id="tkDensity" min="1" max="40" value="10"></label>
+        <label>Speed <input type="range" id="tkSpeed" min="1" max="5" value="1"></label>
+        <label>Frames (min) <input type="number" id="tkFrames" min="1" max="100" value="24"></label>
+        <label>Seed <input type="number" id="tkSeed" value="7"></label>
+        <label>Colors <input type="text" id="tkColors" value="#ffffff, #fff3b0, #b8d4ff"></label>
+      </div>
+      <button class="btn primary" id="tkGo">Add twinkle</button>
+    </div>
+    <div class="fx-pane" data-pane="text">
+      <p class="hint">Letters are 3 × 5 LEDs. Scrolling glides in fractions of an LED for smooth motion.</p>
+      <div class="grid2">
+        <label>Text <input type="text" id="txValue" value="BOO" maxlength="40"></label>
+        <label>Color <input type="color" id="txColor" value="#ff6a00"></label>
+        <label>Motion <select id="txScroll"><option value="none">Still (current frame)</option><option value="left">Scroll left</option><option value="up">Scroll up</option></select></label>
+        <label>Speed (LEDs/frame) <input type="number" id="txSpeed" min="0.1" max="3" step="0.1" value="0.5"></label>
+        <label>X (LED, blank = centre) <input type="number" id="txX"></label>
+        <label>Y (LED, blank = centre) <input type="number" id="txY"></label>
+      </div>
+      <div class="txt-preview"><canvas id="txPreview"></canvas></div>
+      <div class="row-btns"><button class="btn primary" id="txGo">Add text</button><button class="btn ghost" id="fontEdit">Edit pixel font…</button></div>
+    </div>
+    <div class="fx-pane" data-pane="glow">
+      <p class="hint">Adds a soft light halo around the current layer, on its own additive layer. Great for moons, eyes and flames.</p>
+      <div class="grid2">
+        <label>Radius (cells) <input type="range" id="glRadius" min="2" max="20" value="6"></label>
+        <label>Strength <input type="range" id="glStrength" min="10" max="150" value="80"></label>
+      </div>
+      <button class="btn primary" id="glGo">Add glow</button>
+    </div>
+    <div class="fx-pane" data-pane="trail">
+      <p class="hint">Leaves fading copies of the current layer behind it from earlier frames. Gives bats, witches and comets a motion blur.</p>
+      <div class="grid2">
+        <label>Length (frames) <input type="number" id="trLen" min="1" max="8" value="3"></label>
+        <label>Fade <input type="range" id="trDecay" min="10" max="90" value="50"></label>
+      </div>
+      <button class="btn primary" id="trGo">Add trail</button>
+    </div>
+    <div class="fx-pane" data-pane="fire">
+      <p class="hint">Looping flames on a "Fire" layer.</p>
+      <div class="grid2">
+        <label>Height <input type="range" id="frHeight" min="15" max="100" value="45"></label>
+        <label>Intensity <input type="range" id="frIntensity" min="50" max="150" value="100"></label>
+        <label>Frames <input type="number" id="frFrames" min="4" max="100" value="24"></label>
+      </div>
+      <button class="btn primary" id="frGo">Add fire</button>
+    </div>
+    <div class="fx-pane" data-pane="fade">
+      <p class="hint">Fades the current layer in or out over a range of frames.</p>
+      <div class="grid2">
+        <label>From frame <input type="number" id="fdStart" min="1" value="1"></label>
+        <label>To frame <input type="number" id="fdEnd" min="1" value="1"></label>
+        <label>Start opacity <input type="number" id="fdFrom" min="0" max="1" step="0.1" value="0"></label>
+        <label>End opacity <input type="number" id="fdTo" min="0" max="1" step="0.1" value="1"></label>
+      </div>
+      <button class="btn primary" id="fdGo">Apply fade</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Font editor -->
+<dialog id="fontDlg" class="dlg">
+  <form method="dialog" class="dlg-head"><h2>Pixel font</h2><button class="x" aria-label="Close">×</button></form>
+  <p class="dlg-sub">Pick a character, then click cells to switch them on or off.</p>
+  <div class="font-chars" id="fontChars"></div>
+  <div class="font-edit"><div class="font-grid" id="fontGrid"></div><button class="btn ghost" id="fontReset">Reset font</button></div>
+</dialog>
+
+<!-- Import -->
+<dialog id="importDlg" class="dlg">
+  <form method="dialog" class="dlg-head"><h2>Import image</h2><button class="x" aria-label="Close">×</button></form>
+  <div class="import-preview"><canvas id="impPreview"></canvas><span id="impInfo"></span></div>
+  <div class="grid2">
+    <label>Fit <select id="impFit"><option value="fit">Fit (pad)</option><option value="crop">Crop to fill</option><option value="stretch">Stretch</option></select></label>
+    <label>Resize <select id="impFilter"><option value="box">Smooth (box average)</option><option value="nearest">Sharp (nearest)</option></select></label>
+    <label>Into <select id="impTarget"><option value="newLayer">New layer</option><option value="layer">Current layer</option><option value="newProject">New project</option></select></label>
+    <label class="check"><input type="checkbox" id="impBlack"> Make black transparent</label>
+    <label class="check"><input type="checkbox" id="impDelays" checked> Use the GIF's frame timing</label>
+  </div>
+  <p class="hint">Animated GIFs import every frame, starting at the current frame. Tip: you can also paste an image with Ctrl/⌘+V.</p>
+  <div class="row-btns end"><button class="btn primary" id="impGo">Import</button></div>
+</dialog>
+
+<!-- Export -->
+<dialog id="exportDlg" class="dlg">
+  <form method="dialog" class="dlg-head"><h2>Export</h2><button class="x" aria-label="Close">×</button></form>
+  <div class="export-top">
+    <canvas id="expPreview"></canvas>
+    <div class="exp-stats">
+      <div class="stat"><span id="expFrames">–</span><small>frames</small></div>
+      <div class="stat"><span id="expSize">–</span><small>file size</small></div>
+      <div class="stat"><span id="expTime">–</span><small>length</small></div>
+      <div class="stat"><span>20 × 26</span><small>pixels</small></div>
+    </div>
+  </div>
+  <ul class="warnings" id="expWarn"></ul>
+  <div class="field">
+    <label for="outBright">LED brightness <output id="outBrightOut">100%</output></label>
+    <input type="range" id="outBright" min="40" max="160" value="100">
+  </div>
+  <div class="field">
+    <label for="outSat">Color richness <output id="outSatOut">100%</output></label>
+    <input type="range" id="outSat" min="50" max="180" value="100">
+  </div>
+  <label class="check"><input type="checkbox" id="expLoop" checked> Loop forever</label>
+  <div class="exp-actions">
+    <button class="btn primary" id="expGif"><svg><use href="#i-export"/></svg>Download GIF</button>
+    <button class="btn" id="expShare" hidden>Share / Save to Files</button>
+    <button class="btn ghost" id="expPng">PNG of this frame (20 × 26)</button>
+    <button class="btn ghost" id="expPngBig">Preview PNG (12×)</button>
+    <button class="btn ghost" id="expJson">Project file (.json)</button>
+    <button class="btn ghost" data-open="combineDlg">Combine projects…</button>
+  </div>
+  <p class="hint">On iPhone, use <b>Share / Save to Files</b> and save into Files. In Govee Home, open the curtain, go to <b>DIY</b>, and pick the GIF from <b>Files</b>, not Photos (Photos turns GIFs into still images).</p>
+</dialog>
+
+<!-- Combine -->
+<dialog id="combineDlg" class="dlg">
+  <form method="dialog" class="dlg-head"><h2>Combine projects into one GIF</h2><button class="x" aria-label="Close">×</button></form>
+  <p class="dlg-sub">Plays several projects one after another. Add saved projects or project files, then set how many times each repeats.</p>
+  <ul class="combine-list" id="combineList"></ul>
+  <div class="row-btns">
+    <select id="combinePick"></select>
+    <button class="btn ghost" id="combineAddLib">Add saved project</button>
+    <button class="btn ghost" id="combineAddCur">Add current project</button>
+    <button class="btn ghost" id="combineAddFile">Add project file…</button>
+  </div>
+  <div class="exp-stats compact" id="combineStats"></div>
+  <ul class="warnings" id="combineWarn"></ul>
+  <div class="row-btns end"><button class="btn primary" id="combineGo">Download combined GIF</button><button class="btn" id="combineShare" hidden>Share / Save to Files</button></div>
+  <input type="file" id="combineFile" accept=".json,application/json" multiple hidden>
+</dialog>
+
+<!-- Projects -->
+<dialog id="projectsDlg" class="dlg">
+  <form method="dialog" class="dlg-head"><h2>Projects</h2><button class="x" aria-label="Close">×</button></form>
+  <div class="row-btns">
+    <button class="btn primary" id="projSave">Save to this browser</button>
+    <button class="btn ghost" id="projNew">New blank project</button>
+    <button class="btn ghost" id="projOpenFile">Open project file…</button>
+  </div>
+  <ul class="proj-list" id="projList"></ul>
+  <p class="hint">Saved projects live in this browser only. Use Export → Project file to keep a copy anywhere.</p>
+</dialog>
+
+<!-- Palette manager -->
+<dialog id="paletteDlg" class="dlg">
+  <form method="dialog" class="dlg-head"><h2>Palettes</h2><button class="x" aria-label="Close">×</button></form>
+  <p class="dlg-sub">Click a swatch on the main screen to paint with it. Long-press or right-click a swatch to edit it.</p>
+  <div class="pal-edit" id="palEdit"></div>
+  <div class="row-btns">
+    <button class="btn ghost" id="palAdd">Add color</button>
+    <button class="btn ghost" id="palRemove">Remove last</button>
+    <button class="btn ghost" id="palFromFrame">From current frame</button>
+    <button class="btn ghost" id="palReset">Halloween default</button>
+  </div>
+  <div class="row-btns"><input type="text" id="palName" placeholder="Palette name"><button class="btn primary" id="palSave">Save palette</button></div>
+  <ul class="pal-list" id="palList"></ul>
+</dialog>
+
+<!-- Help -->
+<dialog id="helpDlg" class="dlg wide">
+  <form method="dialog" class="dlg-head"><h2>How it works</h2><button class="x" aria-label="Close">×</button></form>
+  <div class="help">
+    <section>
+      <h3>The 5× workflow</h3>
+      <p>Your Curtain Lights 2 (H70B3) has 20 × 26 LEDs. You draw on a 100 × 130 canvas, five times bigger. Each 5 × 5 block becomes one LED, and its color is the <b>average</b> of the block. The faint grid shows these blocks.</p>
+      <p>This is what makes animations look smooth instead of blocky. A soft edge that half covers a block lights that LED at half strength. Shapes moved by one cell slide a fifth of an LED, so motion glides between beads. Use the soft brush, gradients, glow and tweening, and keep <b>Snap to palette</b> at 0 for the smoothest result.</p>
+      <p>The <b>Panel</b> preview shows the exact output, as glowing LEDs or flat pixels. <b>Panel view</b> (Q) shows it on the big canvas too.</p>
+    </section>
+    <section>
+      <h3>Tips for good-looking animations</h3>
+      <ul>
+        <li>Black is "off". Dark shapes only show against lit areas, so put silhouettes in front of a moon or a glowing sky.</li>
+        <li>Keep shapes big and simple: 20 LEDs is narrow. Bold outlines read better than fine detail.</li>
+        <li>Use 60–100 ms per frame for smooth motion and <b>Hold</b> for pauses.</li>
+        <li>Put backgrounds on their own layer. Add glow on an <b>Add</b> layer above anything that should shine.</li>
+        <li>Onion skin (U) shows neighbouring frames while you draw.</li>
+      </ul>
+    </section>
+    <section>
+      <h3>Export and upload</h3>
+      <ol>
+        <li>Press <b>Export</b> and check the size and frame count. Over 100 frames or 500 KB shows a warning. Govee does not publish exact limits, so these are safe guidelines.</li>
+        <li>On iPhone, tap <b>Share / Save to Files</b> → <b>Save to Files</b>. On a computer, <b>Download GIF</b> and move it to your phone (AirDrop or iCloud Drive).</li>
+        <li>In Govee Home, open your Curtain Lights 2, go to <b>DIY</b>, create a new design, and choose to upload a GIF.</li>
+        <li>Pick the file from <b>Files</b>, not Photos. Photos can turn GIFs into still images.</li>
+      </ol>
+      <p>Save the <b>Project file</b> too, so you can reopen and edit later.</p>
+    </section>
+    <section>
+      <h3>Keyboard shortcuts</h3>
+      <div class="keys" id="keyList"></div>
+    </section>
+    <section>
+      <h3>Install on your iPhone</h3>
+      <p>In Safari tap Share → <b>Add to Home Screen</b>. It then opens full screen and works offline.</p>
+    </section>
+  </div>
+</dialog>
+
+<!-- Palette color edit popover -->
+<input type="color" id="swatchEditor" class="hidden-color">
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
