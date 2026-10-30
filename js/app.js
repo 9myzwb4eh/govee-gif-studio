@@ -1106,14 +1106,18 @@ function renderTemplates() {
 
 // Create from a description
 const CR_EXAMPLES = [
-  'orange pumpkin, stars, "BOO"',
-  'ghost rising, three bats, moon',
-  'witch flying across the moon with stars',
-  'spider and green glowing eyes',
-  'lightning storm with rain',
-  'red beating heart, "LOVE" pulsing',
-  'snow falling slowly, "HAPPY HOLIDAYS"',
-  'skull with fire',
+  'Christmas',
+  'Happy Diwali',
+  'New Year fireworks',
+  'Eid Mubarak',
+  'Easter',
+  'birthday "SAM"',
+  'Halloween',
+  'three ghosts flying',
+  'Lunar New Year',
+  'Hanukkah',
+  'Holi',
+  'snowman with snow, "LET IT SNOW"',
 ];
 let crProject = null;
 let crAnim = null;

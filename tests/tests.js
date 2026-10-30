@@ -104,7 +104,7 @@ for (const t of TEMPLATES) {
 }
 
 // 8. Text-to-scene builder.
-for (const prompt of ['orange pumpkin, stars, "BOO"', 'ghost rising, three bats, moon', 'witch flying across the moon with stars', 'lightning storm with rain', 'red beating heart, "LOVE" pulsing', 'snow falling slowly, "HAPPY HOLIDAYS"', 'skull with fire and green eyes', 'hello there', 'three ghosts flying']) {
+for (const prompt of ['orange pumpkin, stars, "BOO"', 'ghost rising, three bats, moon', 'witch flying across the moon with stars', 'lightning storm with rain', 'red beating heart, "LOVE" pulsing', 'snow falling slowly, "HAPPY HOLIDAYS"', 'skull with fire and green eyes', 'hello there', 'three ghosts flying', 'three witches', 'four pumpkins, "BOO"', '2 spiders', 'Christmas', 'Happy Diwali', 'New Year fireworks', 'Eid Mubarak', 'Easter', 'birthday "SAM"', 'Lunar New Year', 'Hanukkah', 'Holi', 'Halloween', 'christmas tree']) {
   const { scene, understood } = sceneFromText(prompt);
   const sp = renderScene(scene);
   const r = analyse(ledFrames(sp));
@@ -114,6 +114,14 @@ const three = sceneFromText('three purple bats').scene.elements[0];
 check('Scene builder reads counts and colors', three.count === 3 && three.color === '#9b30ff', JSON.stringify(three));
 const gh = sceneFromText('three ghosts flying').scene.elements.find((e) => e.type === 'ghost');
 check('Scene builder reads "three ghosts flying"', gh && gh.count === 3 && gh.motion === 'cross', JSON.stringify(gh));
+const wi = sceneFromText('three witches').scene;
+const wiScene = renderScene(wi), wiL = wiScene.layers.find((l) => l.name === 'Witch').id;
+const wiLit = (f) => { const c = wiScene.frames[f].cels[wiL]; let n = 0; if (c) for (let k = 3; k < c.length; k += 4) n += c[k] > 0; return n; };
+check('"three witches" draws three witches', wi.elements[0].count === 3 && wiLit(5) > 0, `count ${wi.elements[0].count}, ${wiLit(5)} lit pixels`);
+const xm = sceneFromText('Christmas').scene;
+check('"Christmas" builds a tree, snow and a greeting', ['tree', 'snow', 'text'].every((t) => xm.elements.some((e) => e.type === t)), xm.elements.map((e) => e.type).join(', '));
+const ct = sceneFromText('christmas tree').scene;
+check('"christmas tree" gives the tree and greeting, no extra pieces', ct.elements.map((e) => e.type).join() === 'tree,text', ct.elements.map((e) => e.type).join(', '));
 const shapeScene = renderScene({ frames: 8, elements: [{ type: 'shape', shape: 'circle', r: 3, color: '#ff0000', keyframes: [{ t: 0, x: 4, y: 13 }, { t: 1, x: 16, y: 13 }] }] });
 const xs2 = shapeScene.frames.map((f) => { const L = shapeScene.layers[1].id; return f.cels[L] ? centroid(f.cels[L])[0] : 0; });
 check('AI shape keyframes move smoothly', xs2.every((x, i) => !i || x > xs2[i - 1]), xs2.map((x) => (x / 5).toFixed(1)).join(' → '));

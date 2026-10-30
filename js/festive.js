@@ -1,0 +1,424 @@
+// Festival elements for scenes: Christmas, New Year, Diwali, Easter, Eid, Hanukkah, Lunar New Year,
+// Holi, birthdays and more. Same painter shape as scene.js: (ctx, t, frameIndex, el), drawing on the
+// 100 x 130 work canvas, with el.x / el.y in LEDs and t running 0..1 around the loop.
+
+import { mulberry, EASINGS } from './effects.js';
+import { SCALE } from './raster.js';
+import { radial, linear } from './templates.js';
+
+const TAU = Math.PI * 2;
+const S = SCALE;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const PARTY = ['#ff1a2a', '#ffd21f', '#3ddc4a', '#2a6bff', '#ff4fa8', '#19e0d0', '#ff6a00', '#9b30ff'];
+
+function glow(ctx, color, amount) { ctx.shadowColor = color; ctx.shadowBlur = amount * S; }
+function noGlow(ctx) { ctx.shadowBlur = 0; }
+function at(ctx, el, dx = 10, dy = 13) {
+  ctx.translate((el.x ?? dx) * S, (el.y ?? dy) * S);
+  const s = el.scale ?? 1; ctx.scale(s, s);
+}
+function palette(el) { return Array.isArray(el.colors) && el.colors.length ? el.colors : el.color ? [el.color] : PARTY; }
+function star5(ctx, r, inner = 0.45) {
+  ctx.beginPath();
+  for (let k = 0; k < 10; k++) {
+    const a = -Math.PI / 2 + (k * Math.PI) / 5, rr = k % 2 ? r * inner : r;
+    ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+  }
+  ctx.closePath();
+}
+function flame(ctx, x, y, h, t, seed = 0) {
+  const f = 1 + 0.18 * Math.sin(TAU * (t * 7 + seed)) * Math.sin(TAU * (t * 3 + seed * 1.7));
+  const hh = h * f;
+  ctx.save();
+  glow(ctx, '#ff9a1f', 2.2);
+  ctx.fillStyle = radial(ctx, x, y - hh * 0.25, hh * 0.9, [[0, '#ffffff'], [0.3, '#ffe36a'], [0.75, '#ff8a00'], [1, 'rgba(255,90,0,0)']]);
+  ctx.beginPath();
+  ctx.moveTo(x, y - hh);
+  ctx.quadraticCurveTo(x + hh * 0.45, y - hh * 0.25, x, y + hh * 0.12);
+  ctx.quadraticCurveTo(x - hh * 0.45, y - hh * 0.25, x, y - hh);
+  ctx.fill();
+  ctx.restore();
+}
+
+export const FESTIVE_PAINT = {
+  tree(ctx, t, i, el) {
+    ctx.save(); at(ctx, el, 10, 14);
+    ctx.fillStyle = '#6a3a12'; ctx.fillRect(-6, 38, 12, 14);
+    const green = el.color || '#1fb83a';
+    for (const [y, w, h] of [[-34, 22, 26], [-14, 32, 30], [8, 42, 34]]) {
+      ctx.fillStyle = linear(ctx, 0, y - h / 2, 0, y + h, [[0, '#7dff8a'], [0.35, green], [1, '#0a5a1a']]);
+      ctx.beginPath(); ctx.moveTo(0, y - h / 2 - 4); ctx.lineTo(w, y + h); ctx.lineTo(-w, y + h); ctx.closePath(); ctx.fill();
+    }
+    // Lights that chase around the tree.
+    const lights = [[-8, -26], [7, -20], [-14, -4], [12, 0], [0, -10], [-22, 22], [20, 18], [-6, 14], [9, 30], [-30, 38], [28, 38], [-14, 34]];
+    lights.forEach(([x, y], k) => {
+      const on = 0.35 + 0.65 * Math.max(0, Math.sin(TAU * (t * 2 - k / lights.length)));
+      const c = PARTY[k % 6];
+      ctx.globalAlpha = on; glow(ctx, c, 1.4); ctx.fillStyle = c;
+      ctx.beginPath(); ctx.arc(x, y, 3.2, 0, TAU); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    const p = 1 + 0.12 * Math.sin(TAU * t * 2);
+    glow(ctx, '#ffd21f', 2.5); ctx.fillStyle = '#ffe36a';
+    ctx.translate(0, -46); ctx.scale(p, p); star5(ctx, 10); ctx.fill();
+    ctx.restore();
+  },
+
+  snowman(ctx, t, i, el) {
+    ctx.save(); at(ctx, el, 10, 14);
+    ctx.translate(0, Math.sin(TAU * t * 2) * 1.5);
+    for (const [y, r] of [[30, 22], [0, 16], [-26, 12]]) {
+      ctx.fillStyle = radial(ctx, -r * 0.3, y - r * 0.3, r * 1.5, [[0, '#ffffff'], [0.7, '#e4ecff'], [1, '#9fb4ff']]);
+      glow(ctx, '#cfe0ff', 0.8); ctx.beginPath(); ctx.arc(0, y, r, 0, TAU); ctx.fill();
+    }
+    noGlow(ctx);
+    ctx.fillStyle = '#ff1a2a'; ctx.fillRect(-15, -16, 30, 6); ctx.fillRect(6, -14, 6, 16);
+    ctx.fillStyle = '#ff6a00'; ctx.beginPath(); ctx.moveTo(0, -26); ctx.lineTo(14, -23); ctx.lineTo(0, -21); ctx.fill();
+    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(-4, -30, 2, 0, TAU); ctx.arc(5, -30, 2, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#3a3a5a'; ctx.fillRect(-12, -40, 24, 4); ctx.fillRect(-8, -54, 16, 15);
+    ctx.fillStyle = '#ff1a2a'; ctx.fillRect(-8, -44, 16, 3);
+    ctx.strokeStyle = '#8a5a2a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    const wave = Math.sin(TAU * t * 2) * 6;
+    ctx.beginPath(); ctx.moveTo(-15, -2); ctx.lineTo(-34, -16 + wave); ctx.moveTo(15, -2); ctx.lineTo(34, -12); ctx.stroke();
+    ctx.restore();
+  },
+
+  gift(ctx, t, i, el) {
+    ctx.save(); at(ctx, el, 10, 15);
+    const c = el.color || '#ff1a2a', hop = Math.max(0, Math.sin(TAU * t * 2)) ** 3 * 8;
+    ctx.fillStyle = linear(ctx, -30, 0, 30, 0, [[0, c], [0.5, '#ffffff'], [0.55, c], [1, c]]);
+    ctx.fillStyle = c; ctx.fillRect(-28, -10, 56, 42);
+    ctx.fillStyle = '#ffd21f'; ctx.fillRect(-5, -10, 10, 42);
+    ctx.translate(0, -hop);
+    ctx.fillStyle = c; ctx.fillRect(-32, -22, 64, 13);
+    ctx.fillStyle = '#ffd21f'; ctx.fillRect(-5, -22, 10, 13);
+    glow(ctx, '#ffd21f', 1.2);
+    ctx.beginPath(); ctx.ellipse(-11, -28, 11, 6, -0.4, 0, TAU); ctx.ellipse(11, -28, 11, 6, 0.4, 0, TAU); ctx.fill();
+    ctx.restore();
+  },
+
+  fireworks(ctx, t, i, el) {
+    const n = clamp(el.count ?? 3, 1, 6), rnd = mulberry(el.seed ?? 11), cols = palette(el);
+    for (let k = 0; k < n; k++) {
+      const u = (t + k / n) % 1, bx = 18 + rnd() * 64, by = 18 + rnd() * 50, c = cols[(k * 3) % cols.length];
+      const c2 = cols[(k * 3 + 2) % cols.length];
+      if (u < 0.22) {
+        // Rocket trail rising to the burst point.
+        const v = EASINGS['ease-out'](u / 0.22), y = 135 - (135 - by) * v;
+        ctx.save(); glow(ctx, '#ffd9a0', 1); ctx.fillStyle = '#ffe9c0';
+        ctx.beginPath(); ctx.arc(bx, y, 2.4, 0, TAU); ctx.fill();
+        ctx.fillStyle = 'rgba(255,170,60,0.5)'; ctx.fillRect(bx - 1, y, 2, 14);
+        ctx.restore();
+        continue;
+      }
+      const v = (u - 0.22) / 0.78, r = 40 * EASINGS['ease-out'](Math.min(1, v * 1.4)), fade = Math.max(0, 1 - v) ** 1.3;
+      const sparks = 14;
+      ctx.save(); ctx.globalAlpha = fade; glow(ctx, c, 1.6);
+      for (let p = 0; p < sparks; p++) {
+        const a = (p / sparks) * TAU + k, x = bx + Math.cos(a) * r, y = by + Math.sin(a) * r + v * v * 18;
+        ctx.fillStyle = p % 2 ? c : c2;
+        ctx.beginPath(); ctx.arc(x, y, 3.2 * (1 - v * 0.5), 0, TAU); ctx.fill();
+        ctx.globalAlpha = fade * 0.45;
+        ctx.beginPath(); ctx.arc(bx + Math.cos(a) * r * 0.6, by + Math.sin(a) * r * 0.6 + v * v * 10, 2, 0, TAU); ctx.fill();
+        ctx.globalAlpha = fade;
+      }
+      if (v < 0.15) { ctx.fillStyle = '#ffffff'; glow(ctx, '#ffffff', 3); ctx.beginPath(); ctx.arc(bx, by, 9 * (1 - v / 0.15), 0, TAU); ctx.fill(); }
+      ctx.restore();
+    }
+  },
+
+  confetti(ctx, t, i, el) {
+    const n = clamp(el.count ?? 40, 5, 80), rnd = mulberry(el.seed ?? 21), cols = palette(el);
+    for (let k = 0; k < n; k++) {
+      const x0 = rnd() * 100, y0 = rnd(), sp = 1 + Math.floor(rnd() * 2), ph = rnd();
+      const y = ((y0 + t * sp) % 1) * 150 - 10, x = x0 + Math.sin(TAU * (t * sp * 2 + ph)) * 6;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(TAU * (t * sp * 2 + ph));
+      ctx.fillStyle = cols[k % cols.length]; glow(ctx, cols[k % cols.length], 0.6);
+      ctx.fillRect(-3.5, -1.5 * Math.abs(Math.cos(TAU * (t * sp * 3 + ph))) - 0.6, 7, 3 * Math.abs(Math.cos(TAU * (t * sp * 3 + ph))) + 1.2);
+      ctx.restore();
+    }
+  },
+
+  balloons(ctx, t, i, el) {
+    const n = clamp(el.count ?? 4, 1, 6), cols = palette(el);
+    for (let k = 0; k < n; k++) {
+      const u = (t + k / n) % 1, x = ((k * 2 + 1) / (n * 2)) * 80 + 10 + Math.sin(TAU * (u * 2 + k * 0.3)) * 6, y = 165 - u * 210;
+      const c = cols[(k * 3) % cols.length];
+      ctx.save();
+      ctx.strokeStyle = 'rgba(230,230,255,0.7)'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(x, y + 16); ctx.quadraticCurveTo(x - 5, y + 28, x + 2, y + 40); ctx.stroke();
+      glow(ctx, c, 1.2);
+      ctx.fillStyle = radial(ctx, x - 5, y - 6, 22, [[0, '#ffffff'], [0.25, c], [1, c]]);
+      ctx.beginPath(); ctx.ellipse(x, y, 12, 15, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x - 3, y + 17); ctx.lineTo(x + 3, y + 17); ctx.lineTo(x, y + 13); ctx.fill();
+      ctx.restore();
+    }
+  },
+
+  diya(ctx, t, i, el) {
+    ctx.save(); at(ctx, el, 10, 16);
+    ctx.save(); glow(ctx, '#ff8a00', 1);
+    ctx.fillStyle = linear(ctx, 0, 0, 0, 22, [[0, el.color || '#ff8a2a'], [1, '#7a2a00']]);
+    ctx.beginPath(); ctx.moveTo(-34, 0); ctx.quadraticCurveTo(0, 40, 34, 0); ctx.quadraticCurveTo(40, -4, 26, -4); ctx.lineTo(-26, -4); ctx.quadraticCurveTo(-40, -4, -34, 0); ctx.fill();
+    ctx.fillStyle = '#ffd21f'; ctx.fillRect(-24, 4, 48, 3);
+    ctx.restore();
+    flame(ctx, 6, -4, 34, t, (el.seed ?? 0) * 0.37);
+    ctx.restore();
+  },
+
+  lantern(ctx, t, i, el) {
+    ctx.save(); at(ctx, el, 10, 12);
+    ctx.translate(0, -40); ctx.rotate(Math.sin(TAU * t) * 0.12); ctx.translate(0, 40);
+    const c = el.color || '#ff1a2a', L = 0.85 + 0.15 * Math.sin(TAU * t * 3);
+    ctx.strokeStyle = '#ffd21f'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, -62); ctx.lineTo(0, -34); ctx.stroke();
+    glow(ctx, c, 2.5 * L);
+    ctx.fillStyle = radial(ctx, 0, 0, 40, [[0, '#ffe08a'], [0.35, c], [1, c]]);
+    ctx.beginPath(); ctx.ellipse(0, 0, 30, 28, 0, 0, TAU); ctx.fill();
+    noGlow(ctx);
+    ctx.strokeStyle = 'rgba(120,10,0,0.6)'; ctx.lineWidth = 1.5;
+    for (const rx of [10, 20]) { ctx.beginPath(); ctx.ellipse(0, 0, rx, 28, 0, 0, TAU); ctx.stroke(); }
+    ctx.fillStyle = '#ffd21f'; ctx.fillRect(-14, -34, 28, 7); ctx.fillRect(-14, 27, 28, 7);
+    ctx.fillRect(-2, 34, 4, 8);
+    ctx.fillStyle = '#ff6a00'; ctx.beginPath(); ctx.moveTo(-5, 42); ctx.lineTo(5, 42); ctx.lineTo(3, 56); ctx.lineTo(-3, 56); ctx.fill();
+    ctx.restore();
+  },
+
+  egg(ctx, t, i, el) {
+    ctx.save(); at(ctx, el, 10, 14);
+    ctx.rotate(Math.sin(TAU * t * 2) * 0.15);
+    const c = el.color || '#ff4fa8', bands = ['#ffd21f', '#19e0d0', '#ffffff'];
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(0, 0, 26, 34, 0, 0, TAU); ctx.clip();
+    ctx.fillStyle = radial(ctx, -8, -12, 46, [[0, '#ffffff'], [0.25, c], [1, c]]); ctx.fillRect(-30, -40, 60, 80);
+    ctx.fillStyle = bands[0]; ctx.fillRect(-30, -12, 60, 7);
+    ctx.fillStyle = bands[1];
+    ctx.beginPath(); ctx.moveTo(-30, 8);
+    for (let x = -30; x <= 30; x += 8) ctx.lineTo(x + 4, (x / 8) % 2 ? 2 : 14);
+    ctx.lineTo(30, 18); ctx.lineTo(-30, 18); ctx.fill();
+    ctx.fillStyle = bands[2];
+    for (const x of [-14, 0, 14]) { ctx.beginPath(); ctx.arc(x, -24, 3, 0, TAU); ctx.fill(); }
+    ctx.restore();
+    ctx.restore();
+  },
+
+  bunny(ctx, t, i, el) {
+    ctx.save(); at(ctx, el, 10, 15);
+    const hop = Math.abs(Math.sin(TAU * t * 2)) * 10;
+    ctx.translate(0, -hop);
+    const c = el.color || '#ffffff';
+    glow(ctx, '#ffffff', 0.8); ctx.fillStyle = c;
+    for (const s of [-1, 1]) {
+      ctx.save(); ctx.translate(s * 10, -26); ctx.rotate(s * (0.15 + Math.sin(TAU * t * 2) * 0.08));
+      ctx.beginPath(); ctx.ellipse(0, -14, 7, 20, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#ff8ac0'; ctx.beginPath(); ctx.ellipse(0, -14, 3.5, 14, 0, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle = c; ctx.beginPath(); ctx.arc(0, 0, 24, 0, TAU); ctx.fill();
+    noGlow(ctx);
+    ctx.fillStyle = '#2a1a4a'; ctx.beginPath(); ctx.arc(-9, -4, 3.5, 0, TAU); ctx.arc(9, -4, 3.5, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#ff4fa8'; ctx.beginPath(); ctx.moveTo(-4, 5); ctx.lineTo(4, 5); ctx.lineTo(0, 10); ctx.fill();
+    ctx.fillStyle = '#ffb0d0'; ctx.beginPath(); ctx.arc(-14, 8, 4, 0, TAU); ctx.arc(14, 8, 4, 0, TAU); ctx.fill();
+    ctx.restore();
+  },
+
+  crescent(ctx, t, i, el) {
+    ctx.save(); at(ctx, el, 10, 12);
+    const c = el.color || '#ffd21f';
+    ctx.save();
+    glow(ctx, c, 2.5);
+    ctx.fillStyle = radial(ctx, -10, -10, 50, [[0, '#ffffff'], [0.4, c], [1, c]]);
+    ctx.beginPath(); ctx.arc(0, 0, 32, 0, TAU); ctx.fill();
+    ctx.globalCompositeOperation = 'destination-out'; ctx.shadowBlur = 0;
+    ctx.beginPath(); ctx.arc(15, -9, 27, 0, TAU); ctx.fill();
+    ctx.restore();
+    const tw = 0.8 + 0.25 * Math.sin(TAU * t * 2);
+    ctx.translate(20, -2); ctx.scale(tw, tw); ctx.rotate(t * TAU * 0.2);
+    glow(ctx, '#ffffff', 2); ctx.fillStyle = '#fff6c0'; star5(ctx, 10); ctx.fill();
+    ctx.restore();
+  },
+
+  menorah(ctx, t, i, el) {
+    ctx.save(); at(ctx, el, 10, 16);
+    const gold = el.color || '#ffc21f';
+    ctx.fillStyle = gold; glow(ctx, gold, 0.6);
+    ctx.fillRect(-4, -4, 8, 36); ctx.fillRect(-22, 32, 44, 6);
+    ctx.fillRect(-48, -6, 96, 5);
+    // Candles light one by one through the loop, then all burn together before it starts over.
+    const lit = Math.min(9, Math.floor(t * 12) + 1);
+    for (let k = 0; k < 9; k++) {
+      const x = -44 + k * 11, h = k === 4 ? 22 : 12, top = -6 - h;
+      ctx.fillStyle = '#4f8bff'; noGlow(ctx); ctx.fillRect(x - 2.5, top, 5, h);
+      const order = k === 4 ? 0 : k < 4 ? 8 - k : 9 - k;
+      if (order < lit) flame(ctx, x, top - 1, 24, t, k * 0.21);
+    }
+    ctx.restore();
+  },
+
+  shamrock(ctx, t, i, el) {
+    ctx.save(); at(ctx, el, 10, 13);
+    ctx.rotate(Math.sin(TAU * t) * 0.12);
+    const c = el.color || '#2adf4a';
+    ctx.strokeStyle = '#1a8a2a'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(0, 6); ctx.quadraticCurveTo(4, 26, 14, 40); ctx.stroke();
+    glow(ctx, c, 1.5);
+    for (let k = 0; k < 3; k++) {
+      ctx.save(); ctx.rotate(-Math.PI / 2 + (k * TAU) / 3 + Math.PI / 2 - TAU / 3 + Math.PI / 6);
+      ctx.fillStyle = radial(ctx, 0, -18, 26, [[0, '#b8ffb0'], [0.4, c], [1, '#0f7a20']]);
+      ctx.beginPath(); ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(-26, -14, -16, -38, 0, -24); ctx.bezierCurveTo(16, -38, 26, -14, 0, 0); ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+  },
+
+  cake(ctx, t, i, el) {
+    ctx.save(); at(ctx, el, 10, 16);
+    const c = el.color || '#ff4fa8';
+    ctx.fillStyle = '#ffe9f2'; ctx.fillRect(-36, 4, 72, 26);
+    ctx.fillStyle = c; ctx.fillRect(-36, 4, 72, 6);
+    for (let x = -32; x <= 32; x += 8) { ctx.beginPath(); ctx.arc(x, 10, 4, 0, Math.PI); ctx.fill(); }
+    ctx.fillStyle = c; ctx.fillRect(-24, -16, 48, 20);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(-24, -16, 48, 4);
+    ctx.fillStyle = '#c8d0e0'; ctx.fillRect(-42, 30, 84, 4);
+    for (const [k, x] of [-14, 0, 14].entries()) {
+      ctx.fillStyle = PARTY[k * 2 + 1]; ctx.fillRect(x - 2, -30, 4, 14);
+      flame(ctx, x, -31, 10, t, k * 0.3);
+    }
+    ctx.restore();
+  },
+
+  flower(ctx, t, i, el) {
+    ctx.save(); at(ctx, el, 10, 12);
+    const c = el.color || '#ff4fa8';
+    ctx.strokeStyle = '#2a9a3a'; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(0, 10); ctx.quadraticCurveTo(-6, 34, 0, 60); ctx.stroke();
+    ctx.fillStyle = '#2adf4a'; ctx.beginPath(); ctx.ellipse(-12, 40, 12, 5, -0.5, 0, TAU); ctx.fill();
+    const bloom = 0.85 + 0.15 * Math.sin(TAU * t), spin = t * TAU / 6;
+    glow(ctx, c, 1.5);
+    for (let k = 0; k < 6; k++) {
+      ctx.save(); ctx.rotate(spin + (k * TAU) / 6);
+      ctx.fillStyle = radial(ctx, 0, -16, 22, [[0, '#ffffff'], [0.4, c], [1, c]]);
+      ctx.beginPath(); ctx.ellipse(0, -16 * bloom, 9, 16 * bloom, 0, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle = '#ffd21f'; glow(ctx, '#ffd21f', 1); ctx.beginPath(); ctx.arc(0, 0, 8, 0, TAU); ctx.fill();
+    ctx.restore();
+  },
+
+  rangoli(ctx, t, i, el) {
+    ctx.save(); at(ctx, el, 10, 13);
+    const cols = el.color ? [el.color, '#ffd21f', '#ffffff'] : ['#ff2adf', '#ffd21f', '#19e0d0', '#ff6a00'];
+    ctx.rotate(t * TAU / 4);
+    for (const [ring, petals, r, len, w] of [[0, 12, 30, 12, 6], [1, 8, 18, 12, 6], [2, 6, 7, 8, 5]]) {
+      const c = cols[(ring + Math.floor(t * 4)) % cols.length];
+      ctx.fillStyle = c; glow(ctx, c, 1.2);
+      for (let k = 0; k < petals; k++) {
+        ctx.save(); ctx.rotate((k * TAU) / petals + (ring % 2 ? -1 : 1) * t * TAU / 8);
+        ctx.beginPath(); ctx.ellipse(0, -r, w, len, 0, 0, TAU); ctx.fill();
+        ctx.restore();
+      }
+    }
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, 0, 4, 0, TAU); ctx.fill();
+    ctx.restore();
+  },
+
+  powder(ctx, t, i, el) {
+    const n = clamp(el.count ?? 5, 1, 8), rnd = mulberry(el.seed ?? 5), cols = el.color ? [el.color] : ['#ff2adf', '#ffd21f', '#3ddc4a', '#2a6bff', '#ff6a00', '#19e0d0'];
+    for (let k = 0; k < n; k++) {
+      const u = (t + k / n) % 1, x = 15 + rnd() * 70, y = 15 + rnd() * 100, c = cols[k % cols.length];
+      const r = 10 + 34 * EASINGS['ease-out'](u), a = Math.max(0, 1 - u) ** 0.8;
+      ctx.save(); ctx.globalAlpha = a;
+      ctx.fillStyle = radial(ctx, x, y, r, [[0, c], [0.55, c], [1, 'rgba(0,0,0,0)']]);
+      ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
+  },
+
+  leaves(ctx, t, i, el) {
+    const n = clamp(el.count ?? 10, 1, 24), rnd = mulberry(el.seed ?? 17), cols = el.color ? [el.color] : ['#ff6a00', '#ffb21f', '#ff1a2a', '#c2381a'];
+    for (let k = 0; k < n; k++) {
+      const x0 = rnd() * 100, y0 = rnd(), ph = rnd();
+      const y = ((y0 + t) % 1) * 160 - 15, x = x0 + Math.sin(TAU * (t * 2 + ph)) * 10;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(TAU * (t * 2 + ph)) * 0.9);
+      const c = cols[k % cols.length]; ctx.fillStyle = c; glow(ctx, c, 0.6);
+      ctx.beginPath(); ctx.moveTo(0, -8); ctx.quadraticCurveTo(8, 0, 0, 8); ctx.quadraticCurveTo(-8, 0, 0, -8); ctx.fill();
+      ctx.restore();
+    }
+  },
+
+  sparkles(ctx, t, i, el) {
+    const n = clamp(el.count ?? 12, 1, 30), rnd = mulberry(el.seed ?? 31), cols = el.color ? [el.color] : ['#ffffff', '#ffd21f', '#ffe9a8'];
+    for (let k = 0; k < n; k++) {
+      const x = rnd() * 100, y = rnd() * 130, ph = rnd(), sp = 1 + Math.floor(rnd() * 2);
+      const v = Math.max(0, Math.sin(TAU * (t * sp + ph))) ** 3;
+      if (v < 0.02) continue;
+      const c = cols[k % cols.length];
+      ctx.save(); ctx.translate(x, y); ctx.scale(v, v); ctx.globalAlpha = v;
+      glow(ctx, c, 1.5); ctx.fillStyle = c; star5(ctx, 6, 0.3); ctx.fill();
+      ctx.restore();
+    }
+  },
+};
+
+// Words that name each element in the text scene builder.
+export const FESTIVE_SUBJECTS = {
+  tree: ['tree', 'trees', 'christmas tree', 'xmas tree', 'pine'],
+  snowman: ['snowman', 'snowmen', 'frosty'],
+  gift: ['gift', 'gifts', 'present', 'presents', 'box', 'boxes'],
+  fireworks: ['firework', 'fireworks', 'rocket', 'rockets', 'explosion', 'burst', 'bursts'],
+  confetti: ['confetti', 'party', 'celebration', 'celebrate'],
+  balloons: ['balloon', 'balloons'],
+  diya: ['diya', 'diyas', 'lamp', 'lamps', 'oil lamp', 'candle', 'candles', 'deepam'],
+  lantern: ['lantern', 'lanterns', 'paper lantern', 'kandil'],
+  egg: ['egg', 'eggs', 'easter egg'],
+  bunny: ['bunny', 'bunnies', 'rabbit', 'rabbits', 'hare'],
+  crescent: ['crescent', 'hilal'],
+  menorah: ['menorah', 'hanukkiah'],
+  shamrock: ['shamrock', 'shamrocks', 'clover', 'four leaf clover'],
+  cake: ['cake', 'cakes', 'cupcake'],
+  flower: ['flower', 'flowers', 'blossom', 'blossoms', 'rose', 'roses', 'tulip', 'tulips', 'bloom', 'blooming'],
+  rangoli: ['rangoli', 'kolam', 'mandala'],
+  powder: ['powder', 'gulal', 'color splash', 'colour splash', 'paint splash', 'splash', 'splashes'],
+  leaves: ['leaf', 'leaves', 'autumn', 'fall leaves'],
+  sparkles: ['sparkle', 'sparkles', 'sparkling', 'glitter', 'shimmer', 'magic'],
+};
+
+// Still subjects that take a slot in the layout; the rest move across the whole panel.
+export const FESTIVE_MAINS = ['tree', 'snowman', 'gift', 'diya', 'lantern', 'egg', 'bunny', 'crescent', 'menorah', 'shamrock', 'cake', 'flower', 'rangoli'];
+
+// Draw order back to front.
+export const FESTIVE_ORDER = { back: ['sparkles', 'fireworks', 'powder', 'leaves', 'balloons'], front: ['confetti'] };
+
+// A festival name alone builds a whole scene. Elements are added only when the description names
+// no subjects of its own; the greeting is used only when there's no lettering.
+function nextYear() {
+  const d = new Date();
+  return d.getMonth() >= 9 ? d.getFullYear() + 1 : d.getFullYear();
+}
+export const FESTIVALS = [
+  { words: ['halloween', 'spooky', 'trick or treat'], label: 'Halloween', els: [{ type: 'moon' }, { type: 'bats', count: 3 }, { type: 'pumpkin' }], text: 'BOO', color: '#ff6a00' },
+  { words: ['christmas', 'xmas', 'santa', 'noel', 'yuletide'], label: 'Christmas', els: [{ type: 'snow' }, { type: 'tree' }], text: 'MERRY CHRISTMAS', color: '#ff1a2a' },
+  { words: ['new year', 'newyear', 'nye', "new year's", 'countdown'], label: 'New Year', els: [{ type: 'fireworks', count: 4 }, { type: 'sparkles' }], text: () => `HAPPY ${nextYear()}`, color: '#ffd21f', skipWhen: ['lunar', 'chinese'] },
+  { words: ['lunar new year', 'chinese new year', 'spring festival', 'tet', 'seollal'], label: 'Lunar New Year', els: [{ type: 'fireworks', count: 3, color: '#ffd21f' }, { type: 'lantern' }], text: 'HAPPY NEW YEAR', color: '#ffd21f' },
+  { words: ['diwali', 'deepavali', 'dipawali', 'deepawali'], label: 'Diwali', els: [{ type: 'fireworks', count: 3 }, { type: 'diya' }], text: 'HAPPY DIWALI', color: '#ffb21f' },
+  { words: ['easter'], label: 'Easter', els: [{ type: 'bunny' }, { type: 'egg', count: 3 }], text: 'HAPPY EASTER', color: '#ff4fa8' },
+  { words: ['eid', 'ramadan', 'ramzan', 'mubarak'], label: 'Eid', els: [{ type: 'sparkles' }, { type: 'crescent' }], text: () => null, color: '#ffd21f' },
+  { words: ['hanukkah', 'chanukah', 'hanukah'], label: 'Hanukkah', els: [{ type: 'sparkles', color: '#4f8bff' }, { type: 'menorah' }], text: 'HAPPY HANUKKAH', color: '#4f8bff' },
+  { words: ['holi'], label: 'Holi', els: [{ type: 'powder', count: 6 }], text: 'HAPPY HOLI', color: '#ff2adf' },
+  { words: ['valentine', 'valentines', "valentine's"], label: "Valentine's", els: [{ type: 'sparkles', color: '#ff4fa8' }, { type: 'heart' }], text: 'LOVE', color: '#ff4fa8' },
+  { words: ['patrick', "patrick's", 'patricks', 'paddy', 'paddys', "paddy's"], label: "St Patrick's", els: [{ type: 'sparkles', color: '#3ddc4a' }, { type: 'shamrock' }], text: 'LUCKY', color: '#3ddc4a' },
+  { words: ['thanksgiving'], label: 'Thanksgiving', els: [{ type: 'leaves' }, { type: 'pumpkin' }], text: 'THANKS', color: '#ffb21f' },
+  { words: ['birthday', 'bday', 'b-day'], label: 'Birthday', els: [{ type: 'balloons' }, { type: 'confetti', count: 18 }, { type: 'cake' }], text: 'HAPPY BIRTHDAY', color: '#ff4fa8' },
+  { words: ['july', 'independence'], label: 'Independence Day', els: [{ type: 'stars' }, { type: 'fireworks', count: 4, colors: ['#ff1a2a', '#ffffff', '#2a6bff'] }], text: 'USA', color: '#ff1a2a' },
+  { words: ['wedding', 'anniversary', 'engagement'], label: 'Wedding', els: [{ type: 'sparkles' }, { type: 'heart', count: 2 }], text: 'LOVE', color: '#ffd9e6' },
+  { words: ['mothers', "mother's", 'mom', 'mum', 'mama'], label: "Mother's Day", els: [{ type: 'flower', count: 3 }], text: 'LOVE MOM', color: '#ff4fa8' },
+  { words: ['navratri', 'garba', 'dussehra', 'durga', 'pongal', 'onam', 'ganesh', 'ganpati'], label: 'Indian festival', els: [{ type: 'sparkles', color: '#ffd21f' }, { type: 'rangoli' }], text: null, color: '#ffb21f' },
+  { words: ['spring', 'nowruz', 'vaisakhi', 'baisakhi'], label: 'Spring', els: [{ type: 'sparkles' }, { type: 'flower', count: 3 }], text: null, color: '#3ddc4a' },
+  { words: ['winter', 'snowy night', 'holidays', 'holiday'], label: 'Winter', els: [{ type: 'snow' }, { type: 'snowman' }], text: null, color: '#19e0d0' },
+];
+
+// Eid's greeting follows which word was used.
+export function festivalText(f, lower) {
+  if (f.label === 'Eid') return /ramadan|ramzan/.test(lower) ? 'RAMADAN KAREEM' : 'EID MUBARAK';
+  return typeof f.text === 'function' ? f.text() : f.text;
+}

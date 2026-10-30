@@ -41,6 +41,7 @@ const SCHEMA = {
           fill: { type: 'boolean' },
           motion: { type: 'string', enum: ['rise', 'float', 'cross', 'still', 'scroll', 'pulse'] },
           text: { type: 'string' },
+          colors: { type: 'array', items: { type: 'string' } },
           shape: { type: 'string', enum: ['circle', 'ellipse', 'rect', 'polygon', 'line', 'path'] },
           points: { type: 'array', items: { type: 'array', items: num } },
           keyframes: {
@@ -67,7 +68,14 @@ What looks good on this panel:
 - 24-48 frames at 50-90 ms is a good range. Never more than 100 frames.
 
 Element types:
-- Built-in animated elements, which look polished, so prefer them when they fit: stars {density 0.03-0.2}, moon {x,y,r,color}, pumpkin {x,y,scale,color}, ghost {motion rise|float|cross, count 1-6, x,y,scale}, bats {count, color}, spider, witch {y}, lightning {color}, rain {color}, snow {color}, fire, eyes {count,color}, skull {x,y,scale}, heart {x,y,scale,color}.
+- Built-in animated elements, which look polished, so prefer them when they fit. Any of these takes {color}; the still ones also take {x,y,scale}; "count" (1-6) draws several:
+  Halloween: moon {x,y,r}, pumpkin, ghost {motion rise|float|cross, count}, bats {count}, spider {count}, witch {y, count}, eyes {count}, skull.
+  Christmas and winter: tree (lit tree with chasing lights and a star), snowman, gift, snow.
+  New Year and celebrations: fireworks {count, colors[]}, confetti {count}, sparkles {count}, balloons {count}, cake (birthday cake with candles).
+  Diwali and Indian festivals: diya (oil lamp with flame), rangoli (rotating pattern), fireworks. Holi: powder {count} (colour bursts).
+  Lunar New Year: lantern (red, swaying), fireworks. Eid and Ramadan: crescent (moon and star), lantern, sparkles. Hanukkah: menorah (candles light one by one).
+  Easter and spring: egg, bunny, flower. St Patrick's: shamrock. Thanksgiving and autumn: leaves, pumpkin. Love: heart.
+  Weather and sky: stars {density 0.03-0.2}, lightning, rain, snow, fire.
 - text {text, color, motion still|scroll|pulse, y}: letters are 3x5 LEDs. Up to 5 characters fit across; longer text should scroll.
 - shape {shape circle|ellipse|rect|polygon|line|path, color, gradient (center color), glow, fill, lineWidth, r|rx,ry|w,h, points (for polygon/line/path, relative to the keyframe position), keyframes [{t,x,y,scale,rotate,opacity}]}: for anything else. Build objects from several shapes that share keyframes.
 Elements draw back to front. Use at most 9 elements besides stars.`;

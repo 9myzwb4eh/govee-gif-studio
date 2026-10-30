@@ -9,6 +9,7 @@ import { celFromCanvas, twinkle, fire, mulberry, EASINGS } from './effects.js';
 import { isEmpty, SCALE } from './raster.js';
 import { layoutText, DEFAULT_FONT } from './font.js';
 import { drawBat, drawGhost, drawWitch, radial, linear } from './templates.js';
+import { FESTIVE_PAINT, FESTIVE_SUBJECTS, FESTIVE_MAINS, FESTIVE_ORDER, FESTIVALS, festivalText } from './festive.js';
 
 const TAU = Math.PI * 2;
 const S = SCALE;
@@ -19,7 +20,7 @@ export const COLORS = {
   cyan: '#19e0d0', aqua: '#19e0d0', magenta: '#ff2adf', black: '#000000', silver: '#c8d0e0',
 };
 
-export const ELEMENT_TYPES = ['stars', 'moon', 'pumpkin', 'ghost', 'bats', 'spider', 'witch', 'lightning', 'rain', 'snow', 'fire', 'eyes', 'skull', 'heart', 'text', 'shape'];
+export const ELEMENT_TYPES = ['stars', 'moon', 'pumpkin', 'ghost', 'bats', 'spider', 'witch', 'lightning', 'rain', 'snow', 'fire', 'eyes', 'skull', 'heart', ...Object.keys(FESTIVE_PAINT), 'text', 'shape'];
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const ease = EASINGS['ease-in-out'];
@@ -126,9 +127,11 @@ const PAINT = {
 
   witch(ctx, t, i, el) {
     const x = -55 + t * 210, y = (el.y ?? 12) * S + Math.sin(TAU * t) * 8;
-    if (el.color) {
-      ctx.save(); drawWitch(ctx, x, y, t);
-      ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = el.color; ctx.fillRect(0, 0, 100, 130); ctx.restore();
+    // The template draws her as a black silhouette against the moon; a scene may have no moon, so
+    // give her a lit color unless one was asked for.
+    if (el.color !== '#000000') {
+      ctx.save(); glowOn(ctx, el.color || '#b06bff', 1.5); drawWitch(ctx, x, y, t);
+      ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = el.color || '#b06bff'; ctx.fillRect(0, 0, 100, 130); ctx.restore();
     } else drawWitch(ctx, x, y, t);
   },
 
@@ -257,6 +260,8 @@ const PAINT = {
     ctx.restore();
   },
 };
+Object.assign(PAINT, FESTIVE_PAINT);
+
 
 function keyframeAt(kfs, t) {
   if (!Array.isArray(kfs) || !kfs.length) return { x: 10, y: 13 };
@@ -289,6 +294,38 @@ export function sanitizeScene(spec) {
     background: { top: s.background?.top || '#000000', bottom: s.background?.bottom || s.background?.top || '#000000' },
     elements: els,
   };
+}
+
+// Subjects that the painters draw once; a count draws several copies, each shrunk into its own cell
+// and offset in time so they don't move in lockstep. Bats, eyes and ghosts handle counts themselves.
+const COPIES = { moon: 'grid', pumpkin: 'grid', skull: 'grid', heart: 'grid', witch: 'rows', spider: 'cols', ...Object.fromEntries(FESTIVE_MAINS.map((k) => [k, 'grid'])) };
+
+function copyCells(el, n) {
+  const out = [];
+  if (COPIES[el.type] === 'rows') {
+    const s = Math.min(1, 1.5 / n);
+    for (let k = 0; k < n; k++) out.push({ x: 50, y: ((k + 0.5) / n) * 130, s, ax: 50, ay: (el.y ?? 12) * S, dt: k / n, el: {} });
+    return out;
+  }
+  if (COPIES[el.type] === 'cols') {
+    const s = Math.min(1, 1.6 / n);
+    for (let k = 0; k < n; k++) out.push({ x: ((k + 0.5) / n) * 100, y: 0, s, ax: 50, ay: 0, dt: k / n, el: {} });
+    return out;
+  }
+  // Still subjects fill the band the layout gave them (the whole panel when they're alone).
+  const sc = el.scale ?? 1, h = Math.min(130, 130 * sc), cy = el.y != null ? el.y * S : 65, w = 100;
+  let best = null;
+  for (let cols = 1; cols <= n; cols++) {
+    const rows = Math.ceil(n / cols), size = Math.min(w / cols, h / rows);
+    const score = size * (rows === 1 ? 1.3 : 1); // a single row reads better than a lopsided grid
+    if (!best || score > best.score) best = { cols, rows, size, score };
+  }
+  const { cols, rows, size } = best, s = (size / 100) * 1.05;
+  for (let k = 0; k < n; k++) {
+    const r = Math.floor(k / cols), inRow = r === rows - 1 ? n - r * cols : cols, c = k % cols;
+    out.push({ x: 50 + (c - (inRow - 1) / 2) * (w / cols), y: cy + (r - (rows - 1) / 2) * (h / rows), s, ax: 50, ay: 65, dt: k / n * 0.37, el: { x: 10, y: 13, scale: 1, r: 4.5 } });
+  }
+  return out;
 }
 
 export function renderScene(input) {
@@ -326,7 +363,12 @@ export function renderScene(input) {
       const prev = f.cels[layer.id];
       const buf = celFromCanvas((ctx) => {
         if (prev) { const img = new ImageData(new Uint8ClampedArray(prev), 100, 130); ctx.putImageData(img, 0, 0); }
-        ctx.save(); paint(ctx, t, i, { ...el, font: p.font }, spec); ctx.restore();
+        const n = COPIES[el.type] ? clamp(Math.round(el.count ?? 1), 1, 6) : 1;
+        if (n === 1) { ctx.save(); paint(ctx, t, i, { ...el, font: p.font }, spec); ctx.restore(); }
+        else for (const c of copyCells(el, n)) {
+          ctx.save(); ctx.translate(c.x, c.y); ctx.scale(c.s, c.s); ctx.translate(-c.ax, -c.ay);
+          paint(ctx, (t + c.dt) % 1, i, { ...el, ...c.el, font: p.font }, spec); ctx.restore();
+        }
       });
       setCel(layer, buf, f);
     });
@@ -338,20 +380,21 @@ export function renderScene(input) {
 
 const NUMBERS = { one: 1, a: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8 };
 const SUBJECTS = {
-  pumpkin: ['pumpkin', 'pumpkins', 'jack-o-lantern', 'jack', 'lantern'],
+  pumpkin: ['pumpkin', 'pumpkins', 'jack-o-lantern', 'jack'],
   ghost: ['ghost', 'ghosts', 'spirit', 'spook', 'boo-ghost'],
   bats: ['bat', 'bats'],
   spider: ['spider', 'spiders', 'web'],
   witch: ['witch', 'witches', 'broom'],
   moon: ['moon', 'full moon', 'moonlight'],
-  stars: ['star', 'stars', 'starry', 'twinkle', 'twinkling', 'sparkle', 'sparkles'],
+  stars: ['star', 'stars', 'starry', 'twinkle', 'twinkling'],
   lightning: ['lightning', 'thunder', 'storm', 'stormy'],
   rain: ['rain', 'raining', 'rainy'],
   snow: ['snow', 'snowing', 'snowflakes', 'snowy'],
   fire: ['fire', 'flames', 'flame', 'burning', 'campfire', 'bonfire'],
   eyes: ['eyes', 'eye', 'glowing eyes', 'watching'],
   skull: ['skull', 'skulls', 'skeleton'],
-  heart: ['heart', 'hearts', 'love', 'valentine'],
+  heart: ['heart', 'hearts', 'love'],
+  ...FESTIVE_SUBJECTS,
 };
 const BACKGROUNDS = {
   sunset: { top: '#14062e', bottom: '#c2381a' }, dusk: { top: '#14062e', bottom: '#8a2a60' },
@@ -402,21 +445,37 @@ export function sceneFromText(input) {
   if (sky > 0 && COLORS[words[sky - 1]]) background = { top: '#000000', bottom: COLORS[words[sky - 1]] + '' };
 
   const mains = [];
+  const addElement = (el) => {
+    const { type, color } = el;
+    if (['pumpkin', 'skull', 'heart', ...FESTIVE_MAINS].includes(type) || (type === 'ghost' && el.motion === 'float' && !(el.count > 1))) mains.push(el);
+    elements.push(el);
+    const cname = color ? Object.keys(COLORS).find((n) => COLORS[n] === color) : null;
+    understood.push(`${el.count > 1 ? el.count + ' ' : ''}${cname ? cname + ' ' : ''}${type}${type === 'ghost' ? ' (' + el.motion + ')' : ''}`);
+  };
   for (const [type, list] of Object.entries(SUBJECTS)) {
     if (!has(list)) continue;
     const k = indexOf(list.filter((w) => !w.includes(' ')));
     const color = k >= 0 ? colorNear(k) : null;
     const el = { type };
     if (color) el.color = color;
-    if (type === 'bats' || type === 'eyes' || type === 'ghost') { const n = k >= 0 ? countNear(k) : null; if (n) el.count = n; }
+    if (!['stars', 'rain', 'snow', 'fire', 'lightning'].includes(type)) { const n = k >= 0 ? countNear(k) : null; if (n) el.count = n; }
     if (type === 'ghost' && k >= 0) {
       if (near(k, ['floating', 'float', 'hovering', 'bobbing'])) el.motion = 'float';
       else if (near(k, ['flying', 'fly', 'flies', 'crossing', 'across', 'drifting', 'flying across'])) el.motion = 'cross';
       else el.motion = 'rise';
     }
-    if (['pumpkin', 'skull', 'heart'].includes(type) || (type === 'ghost' && el.motion === 'float' && !(el.count > 1))) mains.push(el);
-    elements.push(el);
-    understood.push(`${el.count > 1 ? el.count + ' ' : ''}${color ? Object.keys(COLORS).find((n) => COLORS[n] === color) + ' ' : ''}${type}${type === 'ghost' ? ' (' + el.motion + ')' : ''}`);
+    addElement(el);
+  }
+
+  // A festival name fills in a themed scene: its pieces when no main subject was named, and its greeting
+  // when there's no lettering.
+  let letteringColor = null;
+  const fest = FESTIVALS.find((f) => has(f.words) && !(f.skipWhen && has(f.skipWhen)));
+  if (fest) {
+    understood.push(fest.label);
+    if (!mains.length) for (const e of fest.els) if (!elements.some((x) => x.type === e.type)) addElement({ ...e });
+    if (!lettering) { const g = festivalText(fest, lower); if (g) lettering = g; }
+    letteringColor = fest.color;
   }
 
   // Lay out the still subjects (and lettering) down the narrow panel.
@@ -427,7 +486,7 @@ export function sceneFromText(input) {
     const el = { type: 'text', text: lettering.toUpperCase() };
     const qi = words.findIndex((w) => lettering.toLowerCase().split(/\s+/)[0] === w.replace(/["“”']/g, ''));
     const c = qi > 0 ? colorNear(qi) : null;
-    el.color = c || (elements.find((e) => e.type === 'pumpkin') ? '#ffd21f' : '#ff6a00');
+    el.color = c || letteringColor || (elements.find((e) => e.type === 'pumpkin') ? '#ffd21f' : '#ff6a00');
     if (has(['pulse', 'pulsing', 'flash', 'flashing', 'blink', 'blinking'])) el.motion = 'pulse';
     if (has(['scroll', 'scrolling', 'marquee'])) el.motion = 'scroll';
     if (slots > 1) el.y = ys[slots - 1] - 2;
@@ -436,7 +495,7 @@ export function sceneFromText(input) {
   }
 
   // Order back to front: sky things, weather, subjects, lettering.
-  const order = ['stars', 'moon', 'lightning', 'rain', 'snow', 'witch', 'bats', 'spider', 'eyes', 'fire', 'pumpkin', 'skull', 'heart', 'ghost', 'text'];
+  const order = ['stars', ...FESTIVE_ORDER.back, 'moon', 'lightning', 'rain', 'snow', 'witch', 'bats', 'spider', 'eyes', 'fire', 'pumpkin', 'skull', 'heart', ...FESTIVE_MAINS, 'ghost', ...FESTIVE_ORDER.front, 'text'];
   elements.sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
 
   if (!elements.length && raw) {
@@ -451,7 +510,7 @@ export function sceneFromText(input) {
     const w = layoutText(txt.text, DEFAULT_FONT).width;
     if ((txt.motion || (w > 20 ? 'scroll' : 'still')) === 'scroll') frames = clamp(Math.ceil((w + 21) / 0.5), 32, 100);
   }
-  if (elements.some((e) => e.type === 'witch' || e.type === 'bats')) frames = Math.max(frames, 40);
+  if (elements.some((e) => ['witch', 'bats', 'fireworks', 'balloons', 'powder'].includes(e.type))) frames = Math.max(frames, 48);
 
   const name = raw ? raw.replace(/["“”]/g, '').slice(0, 32) : 'Scene';
   return { scene: { name, frames, frameMs, background, elements }, understood };
