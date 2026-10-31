@@ -1429,7 +1429,10 @@ async function handleFile(file) {
   $('impTitle').textContent = 'Import image';
   // Photos get the curtain look by default; drawn art (PNG, GIF) is usually made for the curtain already.
   $('impLook').checked = /jpe?g|heic|webp/i.test(file.type || file.name || '');
-  $('impBg').checked = false; $('impBgStrengthRow').hidden = true;
+  // Animated GIFs from the web usually sit on a coloured backdrop; small ones are usually made for the curtain already.
+  const webGif = image.frames.length > 1 && image.width > 60;
+  $('impBg').checked = webGif; $('impBgStrengthRow').hidden = !webGif;
+  if (webGif) { $('impFit').value = 'crop'; $('impLook').checked = true; }
   openDlg('importDlg');
   renderImportPreview();
 }
@@ -1456,7 +1459,7 @@ async function extractVideo() {
 
 let impAnim = null;
 function importOptions(extra = {}) {
-  return { fit: $('impFit').value, filter: $('impFilter').value, blackTransparent: $('impBlack').checked, focusX: num('impFocus', 50) / 100, curtainLook: $('impLook').checked, removeBg: $('impBg').checked ? num('impBgStrength', 5) : 0, ...extra };
+  return { fit: $('impFit').value, filter: $('impFilter').value, blackTransparent: $('impBlack').checked, focusX: num('impFocus', 50) / 100, curtainLook: $('impLook').checked, removeBg: $('impBg').checked ? num('impBgStrength', 5) : 0, bold: num('impBold', 0), ...extra };
 }
 
 function renderImportPreview() {
@@ -1491,6 +1494,7 @@ function compositeLayersSingle(cel) {
 $('impFocus').addEventListener('input', renderImportPreview);
 $('impBg').addEventListener('change', () => { $('impBgStrengthRow').hidden = !$('impBg').checked; renderImportPreview(); });
 $('impBgStrength').addEventListener('change', renderImportPreview);
+$('impBold').addEventListener('change', renderImportPreview);
 ['impStart', 'impLen', 'impFps'].forEach((id) => $(id).addEventListener('change', guard(extractVideo)));
 $('importDlg').addEventListener('close', () => { clearTimeout(impAnim); if (pendingImport?.video) { closePendingVideo(); pendingImport = null; } });
 

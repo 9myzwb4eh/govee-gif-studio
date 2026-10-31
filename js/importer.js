@@ -37,9 +37,10 @@ export function knockOutBlack(buf, threshold = 12) {
   return buf;
 }
 
-export function toCels(image, { fit = 'fit', filter = 'box', blackTransparent = false, maxFrames = 200, focusX = 0.5, curtainLook = false, removeBg = 0 } = {}) {
+export function toCels(image, { fit = 'fit', filter = 'box', blackTransparent = false, maxFrames = 200, focusX = 0.5, curtainLook = false, removeBg = 0, bold = 0 } = {}) {
   return image.frames.slice(0, maxFrames).map((f) => {
-    const src = removeBg ? removeBackground(f.rgba, image.width, image.height, removeBg) : f.rgba;
+    let src = removeBg ? removeBackground(f.rgba, image.width, image.height, removeBg) : f.rgba;
+    if (bold) src = boldLines(src, image.width, image.height, Math.max(1, Math.round(bold * Math.max(image.width, image.height) / 110)));
     const cel = resizeInto(src, image.width, image.height, WORK_W, WORK_H, { filter, fit, focusX });
     if (curtainLook) curtainize(cel);
     if (blackTransparent) knockOutBlack(cel);
@@ -122,6 +123,28 @@ export function removeBackground(rgba, w, h, strength = 5) {
     if (x > 0) tryN(i - 1); if (x < w - 1) tryN(i + 1); if (y > 0) tryN(i - w); if (y < h - 1) tryN(i + w);
   }
   return out;
+}
+
+// Thin lines (outlines, bones, strings) average away to nothing at 20 x 26. Spreading each bright
+// pixel over its neighbours first (a max filter, by brightness) keeps them visible on the curtain.
+export function boldLines(rgba, w, h, radius) {
+  const lum = (a, p) => a[p] * 0.299 + a[p + 1] * 0.587 + a[p + 2] * 0.114;
+  const pass = (src, horizontal) => {
+    const out = new Uint8ClampedArray(src.length);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      let best = (y * w + x) * 4, bl = lum(src, best);
+      for (let d = -radius; d <= radius; d++) {
+        const xx = horizontal ? x + d : x, yy = horizontal ? y : y + d;
+        if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
+        const q = (yy * w + xx) * 4, l = lum(src, q);
+        if (l > bl) { bl = l; best = q; }
+      }
+      const o = (y * w + x) * 4;
+      out[o] = src[best]; out[o + 1] = src[best + 1]; out[o + 2] = src[best + 2]; out[o + 3] = Math.max(src[o + 3], src[best + 3]);
+    }
+    return out;
+  };
+  return pass(pass(rgba, true), false);
 }
 
 export function isVideoFile(file) {

@@ -9,7 +9,7 @@ import { layoutText } from '../js/font.js';
 import { sceneFromText, renderScene } from '../js/scene.js';
 import { panelFrames, ledFrames, analyse } from '../js/exporter.js';
 import { chatPrompt, parseSceneReply } from '../js/ai.js';
-import { curtainize, removeBackground } from '../js/importer.js';
+import { curtainize, removeBackground, toCels } from '../js/importer.js';
 
 const results = [];
 const check = (name, ok, detail = '') => results.push({ name, ok: !!ok, detail });
@@ -174,6 +174,14 @@ check('"christmas tree" gives the tree and greeting, no extra pieces', ct.elemen
   const out = removeBackground(px, w, h, 5);
   const at = (x, y) => [...out.slice((y * w + x) * 4, (y * w + x) * 4 + 3)];
   check('Background removal blacks out a gradient backdrop and keeps the subject', at(2, 2).join() === '0,0,0' && at(57, 50).join() === '0,0,0' && at(30, 30).join() === '255,120,0', `corner ${at(2, 2)}, centre ${at(30, 30)}`);
+}
+{
+  // A thin white stick figure line on black, 400 px wide: it fades to almost nothing at 20 x 26.
+  const w = 400, h = 520, px = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const p = (y * w + x) * 4; px[p + 3] = 255; if (Math.abs(x - 200) < 2) px[p] = px[p + 1] = px[p + 2] = 255; }
+  const peak = (bold) => { const cel = toCels({ width: w, height: h, frames: [{ rgba: px }] }, { bold })[0].cel; const f = new Float32Array(WORK_W * WORK_H * 3); for (let p = 0, q = 0; p < cel.length; p += 4, q += 3) f[q] = cel[p]; const led = downscale(f); let m = 0; for (let p = 0; p < led.length; p += 3) m = Math.max(m, led[p]); return Math.round(m); };
+  const plain = peak(0), bolder = peak(2);
+  check('Bolder lines keeps a thin line visible on the curtain', bolder > plain * 2 && bolder > 120, `peak ${plain} → ${bolder}`);
 }
 const shapeScene = renderScene({ frames: 8, elements: [{ type: 'shape', shape: 'circle', r: 3, color: '#ff0000', keyframes: [{ t: 0, x: 4, y: 13 }, { t: 1, x: 16, y: 13 }] }] });
 const xs2 = shapeScene.frames.map((f) => { const L = shapeScene.layers[1].id; return f.cels[L] ? centroid(f.cels[L])[0] : 0; });
