@@ -20,6 +20,8 @@ concurrency:
 env:
   APP_VERSION_CODE: ${{ github.run_number }}
   APP_VERSION_NAME: 1.0.${{ github.run_number }}
+  APK_NAME: Curtain-GIF-Studio-1.0.${{ github.run_number }}-Android.apk
+  IPA_NAME: Curtain-GIF-Studio-1.0.${{ github.run_number }}-iPhone-unsigned.ipa
 
 jobs:
   android:
@@ -54,11 +56,11 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew assembleRelease --no-daemon
-      - run: cp android/app/build/outputs/apk/release/app-release.apk curtain-gif-studio.apk
+      - run: cp android/app/build/outputs/apk/release/app-release.apk "$APK_NAME"
       - uses: actions/upload-artifact@v4
         with:
-          name: android-apk
-          path: curtain-gif-studio.apk
+          name: ${{ env.APK_NAME }}
+          path: ${{ env.APK_NAME }}
 
   ios:
     runs-on: macos-26
@@ -80,11 +82,11 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
           mkdir -p Payload
           cp -R build/Build/Products/Release-iphoneos/App.app Payload/
-          zip -qry curtain-gif-studio-unsigned.ipa Payload
+          zip -qry "$IPA_NAME" Payload
       - uses: actions/upload-artifact@v4
         with:
-          name: ios-ipa
-          path: curtain-gif-studio-unsigned.ipa
+          name: ${{ env.IPA_NAME }}
+          path: ${{ env.IPA_NAME }}
 
   release:
     if: github.event_name != 'pull_request'
@@ -99,15 +101,15 @@ jobs:
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: build-${{ github.run_number }}
+          TAG: v1.0.${{ github.run_number }}
         run: |
           cat > notes.md <<NOTES
           Curtain GIF Studio ${APP_VERSION_NAME}, built from ${GITHUB_SHA::7}.
 
-          **Android:** download \`curtain-gif-studio.apk\` on the phone, open it, and allow installing from your browser when asked.
+          **Android:** download \`${APK_NAME}\` on the phone, open it, and allow installing from your browser when asked.
 
-          **iPhone:** \`curtain-gif-studio-unsigned.ipa\` has to be signed as it is installed. Use Sideloadly (Windows or Mac) or AltStore with your Apple ID. With a free Apple ID the app runs for 7 days, then re-sign it. Full steps are in the README.
+          **iPhone:** \`${IPA_NAME}\` has to be signed as it is installed. Use Sideloadly (Windows or Mac) or AltStore with your Apple ID. With a free Apple ID the app runs for 7 days, then re-sign it. Full steps are in the README.
           NOTES
-          gh release create "$TAG" curtain-gif-studio.apk curtain-gif-studio-unsigned.ipa \
+          gh release create "$TAG" "$APK_NAME" "$IPA_NAME" \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "Curtain GIF Studio $APP_VERSION_NAME" --notes-file notes.md --latest

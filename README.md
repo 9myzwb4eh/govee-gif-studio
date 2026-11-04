@@ -19,8 +19,8 @@ The same app is also packaged as native Android and iOS apps with [Capacitor](ht
 
 Every change to `main` is built automatically and published on the [Releases page](../../releases/latest):
 
-- **Android:** download `curtain-gif-studio.apk` on the phone and open it. Android asks once to allow installs from your browser or Files app; allow it, then tap **Install**.
-- **iPhone:** `curtain-gif-studio-unsigned.ipa` is not signed, because only Apple can sign an app for anyone's phone (that needs the App Store or a paid developer account). You sign it with your own Apple ID as you install it:
+- **Android:** download `Curtain-GIF-Studio-<version>-Android.apk` on the phone and open it. Android asks once to allow installs from your browser or Files app; allow it, then tap **Install**.
+- **iPhone:** `Curtain-GIF-Studio-<version>-iPhone-unsigned.ipa` is not signed, because only Apple can sign an app for anyone's phone (that needs the App Store or a paid developer account). You sign it with your own Apple ID as you install it:
   1. Install [Sideloadly](https://sideloadly.io) on a Windows PC or Mac, or [AltStore](https://altstore.io).
   2. Plug the iPhone in, drag the IPA into Sideloadly, enter your Apple ID and click **Start**.
   3. On the iPhone: Settings → General → VPN & Device Management → trust your Apple ID. On iOS 16 and later, also turn on Settings → Privacy & Security → **Developer Mode**.
