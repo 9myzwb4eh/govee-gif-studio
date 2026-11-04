@@ -1,0 +1,115 @@
+name: Build Android and iOS apps
+
+# Pull requests: build both apps and attach them to the run (Actions tab > run > Artifacts).
+# Pushes to main (and manual runs): also publish them as a GitHub Release, so anyone can
+# download them from https://github.com/<owner>/<repo>/releases/latest without building.
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', 'tests/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apps-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_VERSION_CODE: ${{ github.run_number }}
+  APP_VERSION_NAME: 1.0.${{ github.run_number }}
+  APK_NAME: Curtain-GIF-Studio-1.0.${{ github.run_number }}-Android.apk
+  IPA_NAME: Curtain-GIF-Studio-1.0.${{ github.run_number }}-iPhone-unsigned.ipa
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm run build && npx cap sync android
+      - name: Use the release signing key, if one is set up
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "Signing with the release key."
+          else
+            echo "::notice::No ANDROID_KEYSTORE_BASE64 secret, so the APK is signed with a throwaway debug key. See README > Android signing."
+          fi
+      - name: Build APK
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon
+      - run: cp android/app/build/outputs/apk/release/app-release.apk "$APK_NAME"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APK_NAME }}
+          path: ${{ env.APK_NAME }}
+
+  ios:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build && npx cap sync ios
+      # Builds without code signing. The IPA must be signed when it is installed, which
+      # Sideloadly or AltStore do with a free Apple ID (see README).
+      - name: Build unsigned IPA
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+            MARKETING_VERSION="$APP_VERSION_NAME" CURRENT_PROJECT_VERSION="$APP_VERSION_CODE" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qry "$IPA_NAME" Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.IPA_NAME }}
+          path: ${{ env.IPA_NAME }}
+
+  release:
+    if: github.event_name != 'pull_request'
+    needs: [android, ios]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v1.0.${{ github.run_number }}
+        run: |
+          cat > notes.md <<NOTES
+          Curtain GIF Studio ${APP_VERSION_NAME}, built from ${GITHUB_SHA::7}.
+
+          **Android:** download \`${APK_NAME}\` on the phone, open it, and allow installing from your browser when asked.
+
+          **iPhone:** \`${IPA_NAME}\` has to be signed as it is installed. Use Sideloadly (Windows or Mac) or AltStore with your Apple ID. With a free Apple ID the app runs for 7 days, then re-sign it. Full steps are in the README.
+          NOTES
+          gh release create "$TAG" "$APK_NAME" "$IPA_NAME" \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "Curtain GIF Studio $APP_VERSION_NAME" --notes-file notes.md --latest

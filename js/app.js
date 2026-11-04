@@ -12,6 +12,7 @@ import { DEFAULT_FONT, layoutText } from './font.js';
 import * as fx from './effects.js';
 import { TEMPLATES } from './templates.js';
 import { readImageFile, toCels, isVideoFile, openVideo, fetchClip } from './importer.js';
+import { isNative, platform } from './native.js';
 import { panelFrames, ledFrames, analyse, combineFrames, formatBytes, safeName, download, share, canShareFiles, framePNG, buildGIF } from './exporter.js';
 import { sceneFromText, renderScene } from './scene.js';
 import { aiScene, chatPrompt, parseSceneReply, AI_MODELS, getKey, setKey } from './ai.js';
@@ -1941,8 +1942,20 @@ async function start() {
     $('recoverYes').onclick = guard(() => { setProject(deserialize(saved.data), { keepHistory: false }); $('recover').hidden = true; toast('Last session recovered.'); });
     $('recoverNo').onclick = () => { $('recover').hidden = true; };
   }
-  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+  if (isNative()) nativeLabels();
+  if ('serviceWorker' in navigator && location.protocol === 'https:' && !isNative()) navigator.serviceWorker.register('sw.js').catch(() => {});
   window.__studio = { get project() { return project; }, state, serialize, deserialize, renderAll, panelFrames, buildGIF };
+}
+
+// In the Android and iOS apps, "Download" saves straight to Photos / the gallery.
+function nativeLabels() {
+  const ios = platform() === 'ios';
+  const where = ios ? 'Photos' : 'the gallery';
+  $('expGif').lastChild.textContent = `Save GIF to ${ios ? 'Photos' : 'gallery'}`;
+  $('combineGo').textContent = `Save combined GIF to ${ios ? 'Photos' : 'gallery'}`;
+  $('expShare').textContent = $('combineShare').textContent = 'Share…';
+  const hint = document.querySelector('#exportDlg .exp-actions + .hint') || document.querySelector('.exp-actions + .hint');
+  if (hint) hint.innerHTML = `<b>Save GIF</b> puts it in ${where}${ios ? ' (the <b>Animated</b> album)' : ' (the <b>Curtain GIF Studio</b> album)'}. In Govee Home, open the curtain, go to <b>DIY</b>, and pick it from there. PNGs also go to ${where}; project files open the share sheet.`;
 }
 
 start();

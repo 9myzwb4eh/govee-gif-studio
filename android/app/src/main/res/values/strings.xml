@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Curtain GIF Studio</string>
+    <string name="title_activity_main">Curtain GIF Studio</string>
+    <string name="package_name">com.curtaingifstudio.app</string>
+    <string name="custom_url_scheme">com.curtaingifstudio.app</string>
+</resources>

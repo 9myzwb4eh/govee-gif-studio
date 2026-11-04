@@ -4,6 +4,7 @@ import { encodeGIF, medianCut } from './gif.js';
 import { renderPanel, renderPanelForLeds, frameTime, LIMITS, PANEL_W, PANEL_H } from './model.js';
 import { countColors, snapToPalette } from './raster.js';
 import { panelToCanvas } from './led.js';
+import { isNative, nativeShare, saveToPhotos } from './native.js';
 
 // Frames as the preview shows them (how the curtain will look).
 export function panelFrames(project) {
@@ -81,7 +82,15 @@ export async function framePNG(project, frame, scale = 1, opts = {}) {
 
 // Saves a file with a real download (anchor + download attribute). Falls back to a data URL
 // if the browser refuses object URLs.
+// In the Android and iOS apps, images go straight to Photos / the gallery (where the Govee app
+// picks GIFs from) and other files open the share sheet.
 export async function download(data, filename, type) {
+  if (isNative()) {
+    if (/^image\//.test(type || data?.type || '')) {
+      try { return await saveToPhotos(data, filename, type || data.type); } catch (e) { console.warn('Save to Photos failed, opening the share sheet', e); }
+    }
+    return nativeShare(data, filename, type || data?.type || 'application/octet-stream');
+  }
   const blob = data instanceof Blob ? data : new Blob([data], { type });
   let url;
   try { url = URL.createObjectURL(blob); } catch { url = await blobToDataURL(blob); }
@@ -94,6 +103,7 @@ export async function download(data, filename, type) {
 }
 
 export function canShareFiles() {
+  if (isNative()) return true;
   try {
     return !!(navigator.canShare && navigator.canShare({ files: [new File([new Uint8Array(1)], 'x.gif', { type: 'image/gif' })] }));
   } catch { return false; }
@@ -101,6 +111,7 @@ export function canShareFiles() {
 
 // iPhone: the share sheet offers "Save to Files", which is where the Govee app picks GIFs from.
 export async function share(data, filename, type) {
+  if (isNative()) return nativeShare(data, filename, type);
   const file = new File([data], filename, { type });
   await navigator.share({ files: [file] });
 }
